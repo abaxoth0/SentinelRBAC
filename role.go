@@ -21,7 +21,7 @@ func GetServiceRoles(serviceID string) ([]Role, *Error) {
 		panic("RBAC is not loaded")
 	}
 
-	var service *service = nil
+	var service *Service = nil
 
 	for _, rbacService := range RBAC.Services {
 		if rbacService.ID == serviceID {

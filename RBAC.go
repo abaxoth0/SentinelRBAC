@@ -16,24 +16,24 @@ type Role struct {
 	Permissions []PermissionTag `json:"permissions"`
 }
 
-type service struct {
+type Service struct {
 	// uuid format
 	ID    string `json:"id"`
 	Name  string `json:"name"`
 	Roles []Role `json:"roles,omitempty"`
 }
 
-type schema struct {
+type Schema struct {
 	Roles    []Role    `json:"roles"`
-	Services []service `json:"services"`
+	Services []Service `json:"services"`
 }
 
-var RBAC *schema
+var RBAC *Schema
 
 // Opens and reads "RBAC.json" file which contains role and permission definitions and returns the parsed configuration.
 //
 // This function will stop app if it can't read RBAC configuration file, or build RBAC schema.
-func Load() *schema {
+func Load() *Schema {
 	log.Println("[ RBAC ] Loading configuration...")
 
 	file, err := os.Open("RBAC.json")
@@ -63,7 +63,7 @@ func Load() *schema {
 		os.Exit(1)
 	}
 
-	var RBAC schema
+	var RBAC Schema
 
 	if err := json.NewDecoder(bytes.NewReader(buf)).Decode(&RBAC); err != nil {
 		log.Println("[ CRITICAL ERROR ] Failed to parse RBAC configuration file")
@@ -88,7 +88,7 @@ func IsLoaded() bool {
 	return RBAC != nil
 }
 
-func check(RBAC *schema) error {
+func check(RBAC *Schema) error {
 	for _, globalRole := range RBAC.Roles {
 		for _, permission := range globalRole.Permissions {
 			if !slices.Contains(PermissionTags, permission) {

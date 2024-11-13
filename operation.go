@@ -4,7 +4,7 @@ type OperationName string
 
 type Operation struct {
 	// Unique name of operation.
-	Operation OperationName
+	Name OperationName
 
 	// Array of permissions which allows to perform this operation.
 	// If user has any of these permissions, he can perform this operation. (It's 'OR' not 'AND')
