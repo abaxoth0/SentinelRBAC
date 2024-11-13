@@ -15,7 +15,7 @@ type Operation struct {
 // It checks both user and target roles against the required permissions for the operation defined in the authorizationRules.
 // Returns an ExternalError if the user lacks the necessary permissions or attempts forbidden operations, such as
 // modifying an admin or performing moderator-to-moderator actions. Returns nil if authorization is successful.
-func (operation Operation) Authorize(userRoleName string, targetRoleName string) error {
+func (operation Operation) Authorize(userRoleName string, targetRoleName string) *Error {
 	userRole, err := ParseRole(userRoleName)
 
 	if err != nil {
