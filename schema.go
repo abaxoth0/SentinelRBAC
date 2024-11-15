@@ -12,9 +12,11 @@ import (
 )
 
 type schema struct {
-	isLoaded     bool
-	DefaultRoles []*Role    `json:"default-roles"`
-	Services     []*Service `json:"services,omitempty"`
+	isLoaded bool
+	// Role wich will have all new users, must correspond with one of the default roles' name. (optional)
+	OriginRoleName string     `json:"origing-role,omitempty"`
+	DefaultRoles   []*Role    `json:"default-roles"`
+	Services       []*Service `json:"services,omitempty"`
 }
 
 var Schema *schema
@@ -70,7 +72,7 @@ func LoadSchema(path string) error {
 
 	log.Println("[ RBAC ] Checking configuration...")
 
-	if err = ValidatePermissions(Schema); err != nil {
+	if err = ValidateSchema(Schema); err != nil {
 		return err
 	}
 
@@ -91,15 +93,25 @@ func IsSchemaLoaded() bool {
 	return Schema != nil
 }
 
-// Checks if all permissions in default roles and service roles are valid.
-func ValidatePermissions(schema *schema) error {
+func ValidateSchema(schema *schema) error {
+	isDefaultRoleFound := false
+
 	for _, defaultRole := range schema.DefaultRoles {
+		if defaultRole.Name == schema.OriginRoleName {
+			isDefaultRoleFound = true
+		}
+
 		for _, permission := range defaultRole.Permissions {
 			if !slices.Contains(PermissionTags, permission) {
 				err := fmt.Sprintf("invalid permission \"%s\" in default role: \"%s\"", string(permission), defaultRole.Name)
 				return errors.New(err)
 			}
 		}
+	}
+
+	if !isDefaultRoleFound {
+		err := fmt.Sprintf("invalid origing role \"%s\", it must be one of the default roles' names", schema.OriginRoleName)
+		return errors.New(err)
 	}
 
 	for _, service := range schema.Services {
