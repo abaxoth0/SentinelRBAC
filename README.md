@@ -4,7 +4,7 @@ SentinelRBAC is library for authorization, it helps you as a developer to define
 
 All roles and services are defined into variable named `Schema`, it's `nil` by default and can be initialized by one of the following methods:
 
--   **LoadSchema(path string)** - Open and reads configuration file at the specified path, then this method parse it and assign to `Schema` variable. This method also validates `Schema` permissions and merges default roles with service specific roles, so consider this method as recommended way of `Schema` initialization.
+-   **LoadSchema(path string)** - Open and reads configuration file (JSON) at the specified path, then this method parse it and assign to `Schema` variable. This method also validates `Schema` permissions and merges default roles with service specific roles, so consider this method as recommended way of `Schema` initialization.
 
 -   **DefineSchema(DefaultRoles []Role, Services []Service)** - Initializing new variable and assign `Schema` to it.
 
@@ -12,7 +12,9 @@ All roles and services are defined into variable named `Schema`, it's `nil` by d
 
 Roles can be specified by default or services can have their own roles.
 
-> Service specific roles will overwrite default roles.
+> Service specific roles will overwrite default roles!
+
+You can also select one of default roles as origin role, all new users must have this role in your application.
 
 ### PERMISSIONS
 
@@ -68,6 +70,7 @@ Permissions can be specified by using special tags. Now there are 10 permission 
             "permissions": ["C", "R", "U", "D", "A"]
         }
     ],
+    "origing-role": "unconfirmed_user",
     "services": [
         {
             "id": "5b87cfb3-4d13-4d1d-ab3d-44d5d0c17b8a",
