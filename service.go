@@ -6,6 +6,4 @@ type Service struct {
 	Roles []*Role `json:"roles,omitempty"`
 }
 
-const DefaultServiceID string = "default"
-
 var CurrentService *Service
