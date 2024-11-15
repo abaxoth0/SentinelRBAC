@@ -22,7 +22,8 @@ func (operation Operation) Authorize(userRoleName string, targetRoleName string)
 		return err
 	}
 
-	userPermissions, requiredPermissions := GetPermissions(operation.RequiredPermission, userRole)
+	userPermissions := GetPermissions(userRole.Permissions)
+	requiredPermissions := GetPermissions(operation.RequiredPermission)
 
 	// All operations which has targetRoleName == role.NoneRole, but need authorization requires admin rights.
 	// (For example: drop all soft deleted users)
@@ -30,11 +31,5 @@ func (operation Operation) Authorize(userRoleName string, targetRoleName string)
 		return InsufficientPermission
 	}
 
-	targetRole, err := ParseRole(targetRoleName)
-
-	if err != nil {
-		return err
-	}
-
-	return VerifyPermissions(requiredPermissions, userPermissions, targetRole)
+	return VerifyPermissions(requiredPermissions, userPermissions)
 }

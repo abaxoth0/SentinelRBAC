@@ -38,7 +38,7 @@ var PermissionTags []PermissionTag = []PermissionTag{
 	AdminPermissionTag,
 }
 
-type permissions struct {
+type Permissions struct {
 	Create     bool
 	SelfCreate bool
 	Read       bool
@@ -53,18 +53,27 @@ type permissions struct {
 
 var InsufficientPermission *Error = NewError("Недостаточно прав для выполнения данной операции")
 
-func VerifyPermissions(required *permissions, permitted *permissions, targetRole *Role) *Error {
-	isTargetModerator := slices.Contains(targetRole.Permissions, ModeratorPermissionTag)
-	isTargetAdmin := slices.Contains(targetRole.Permissions, AdminPermissionTag)
-
-	if (required.Delete || required.SelfDelete) && isTargetAdmin {
-		return NewError("Невозможно удалить пользователя с ролью администратора. (Обратитесь напрямую в базу данных)")
+// Converts a slice of PermissionTag into a *permissions.
+//
+// It doesn't check if a permission is valid or not, it just sets the corresponding
+// boolean field of the *permissions to true if the permission is present in the
+// slice.
+func GetPermissions(tags []PermissionTag) *Permissions {
+	return &Permissions{
+		Admin:      slices.Contains(tags, AdminPermissionTag),
+		Moderator:  slices.Contains(tags, ModeratorPermissionTag),
+		Create:     slices.Contains(tags, CreatePermissionTag),
+		SelfCreate: slices.Contains(tags, SelfCreatePermissionTag),
+		Read:       slices.Contains(tags, ReadPermissionTag),
+		SelfRead:   slices.Contains(tags, SelfReadPermissionTag),
+		Update:     slices.Contains(tags, UpdatePermissionTag),
+		SelfUpdate: slices.Contains(tags, SelfUpdatePermissionTag),
+		Delete:     slices.Contains(tags, DeletePermissionTag),
+		SelfDelete: slices.Contains(tags, SelfDeletePermissionTag),
 	}
+}
 
-	if isTargetModerator && !permitted.Admin && (required.Update || required.Delete) {
-		return InsufficientPermission
-	}
-
+func VerifyPermissions(required *Permissions, permitted *Permissions) *Error {
 	if required.Admin && !permitted.Admin {
 		return InsufficientPermission
 	}
@@ -73,9 +82,12 @@ func VerifyPermissions(required *permissions, permitted *permissions, targetRole
 		return InsufficientPermission
 	}
 
+	// Admins and moderators can do all CRUD operations (even if corresponding permissions are not specified for them)
 	if permitted.Admin || permitted.Moderator {
 		return nil
 	}
+
+	// CRUD operations
 
 	if required.Create && (!permitted.Create) {
 		return InsufficientPermission
@@ -110,34 +122,4 @@ func VerifyPermissions(required *permissions, permitted *permissions, targetRole
 	}
 
 	return nil
-}
-
-func GetPermissions(required []PermissionTag, targetRole *Role) (*permissions, *permissions) {
-	targetPermissions := &permissions{
-		Admin:      slices.Contains(targetRole.Permissions, AdminPermissionTag),
-		Moderator:  slices.Contains(targetRole.Permissions, ModeratorPermissionTag),
-		Create:     slices.Contains(targetRole.Permissions, CreatePermissionTag),
-		SelfCreate: slices.Contains(targetRole.Permissions, SelfCreatePermissionTag),
-		Read:       slices.Contains(targetRole.Permissions, ReadPermissionTag),
-		SelfRead:   slices.Contains(targetRole.Permissions, SelfReadPermissionTag),
-		Update:     slices.Contains(targetRole.Permissions, UpdatePermissionTag),
-		SelfUpdate: slices.Contains(targetRole.Permissions, SelfUpdatePermissionTag),
-		Delete:     slices.Contains(targetRole.Permissions, DeletePermissionTag),
-		SelfDelete: slices.Contains(targetRole.Permissions, SelfDeletePermissionTag),
-	}
-
-	requiredPermissions := &permissions{
-		Admin:      slices.Contains(required, AdminPermissionTag),
-		Moderator:  slices.Contains(required, ModeratorPermissionTag),
-		Create:     slices.Contains(required, CreatePermissionTag),
-		SelfCreate: slices.Contains(required, SelfCreatePermissionTag),
-		Read:       slices.Contains(required, ReadPermissionTag),
-		SelfRead:   slices.Contains(required, SelfReadPermissionTag),
-		Update:     slices.Contains(required, UpdatePermissionTag),
-		SelfUpdate: slices.Contains(required, SelfUpdatePermissionTag),
-		Delete:     slices.Contains(required, DeletePermissionTag),
-		SelfDelete: slices.Contains(required, SelfDeletePermissionTag),
-	}
-
-	return targetPermissions, requiredPermissions
 }
