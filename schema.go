@@ -144,6 +144,10 @@ func MergeServicePermissions(schema *schema) {
 			}
 		}
 
+		if service.Roles == nil {
+			roles = schema.DefaultRoles
+		}
+
 		service.Roles = roles
 	}
 }
