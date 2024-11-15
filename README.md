@@ -63,11 +63,11 @@ Permissions can be specified by using special tags. Now there are 10 permission 
         },
         {
             "name": "moderator",
-            "permissions": ["C", "R", "U", "D", "M"]
+            "permissions": ["M"]
         },
         {
             "name": "admin",
-            "permissions": ["C", "R", "U", "D", "A"]
+            "permissions": ["A"]
         }
     ],
     "origing-role": "unconfirmed_user",
