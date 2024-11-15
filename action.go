@@ -1,16 +1,14 @@
 package rbac
 
-type OperationName string
+type ActionName string
 
-type Operation struct {
-	// Unique name of operation.
-	Name OperationName
-
+type Action struct {
+	Name                ActionName
 	RequiredPermissions []PermissionTag
 }
 
 // Checks if the user has enough permissions to perform operation on user with the target role.
-func (operation Operation) Authorize(userRoleName string) *Error {
+func (operation Action) Authorize(userRoleName string) *Error {
 	userRole, err := ParseRole(userRoleName, CurrentService)
 
 	if err != nil {
