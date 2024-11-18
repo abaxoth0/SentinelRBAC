@@ -16,7 +16,7 @@ type schema struct {
 	// Role wich will have all new users, must correspond with one of the default roles' name. (optional)
 	OriginRoleName string     `json:"origing-role,omitempty"`
 	DefaultRoles   []*Role    `json:"default-roles"`
-	Services       []*Service `json:"services,omitempty"`
+	Services       []*Service `json:"services"`
 }
 
 var Schema *schema
@@ -78,13 +78,11 @@ func LoadSchema(path string) error {
 
 	log.Println("[ RBAC ] Checking configuration: OK")
 
-	if Schema.Services != nil {
-		log.Println("[ RBAC ] Merging services permissions...")
+	log.Println("[ RBAC ] Merging services permissions...")
 
-		MergeServicePermissions(Schema)
+	MergeServicePermissions(Schema)
 
-		log.Println("[ RBAC ] Merging service permissions: OK")
-	}
+	log.Println("[ RBAC ] Merging service permissions: OK")
 
 	return nil
 }
@@ -94,11 +92,15 @@ func IsSchemaLoaded() bool {
 }
 
 func ValidateSchema(schema *schema) error {
-	isDefaultRoleFound := false
+	if len(schema.Services) == 0 {
+		return errors.New("no services defined")
+	}
+
+	isOriginRoleFound := false
 
 	for _, defaultRole := range schema.DefaultRoles {
 		if defaultRole.Name == schema.OriginRoleName {
-			isDefaultRoleFound = true
+			isOriginRoleFound = true
 		}
 
 		for _, permission := range defaultRole.Permissions {
@@ -109,7 +111,7 @@ func ValidateSchema(schema *schema) error {
 		}
 	}
 
-	if !isDefaultRoleFound {
+	if schema.OriginRoleName != "" && !isOriginRoleFound {
 		err := fmt.Sprintf("invalid origing role \"%s\", it must be one of the default roles' names", schema.OriginRoleName)
 		return errors.New(err)
 	}

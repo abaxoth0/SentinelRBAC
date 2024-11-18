@@ -17,24 +17,6 @@ func IsModerator(role *Role) bool {
 	return slices.Contains(role.Permissions, ModeratorPermissionTag)
 }
 
-func ParseRole(roleName string, service *Service) (*Role, *Error) {
-	if !IsSchemaLoaded() {
-		return nil, NewError("RBAC is not loaded")
-	}
-
-	if CurrentService == nil {
-		return nil, NewError("CurrentService is not set")
-	}
-
-	for _, role := range service.Roles {
-		if role.Name == roleName {
-			return role, nil
-		}
-	}
-
-	return nil, NewError("Роль \"" + roleName + "\" не надена")
-}
-
 func GetServiceRoles(serviceID string) ([]*Role, *Error) {
 	if !IsSchemaLoaded() {
 		return nil, NewError("RBAC is not loaded")
