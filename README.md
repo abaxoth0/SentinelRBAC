@@ -6,39 +6,45 @@ All roles and services are defined into variable named `Schema`, it's `nil` by d
 
 -   **LoadSchema(path string)** - Open and reads configuration file (JSON) at the specified path, then this method parse it and assign to `Schema` variable. This method also validates `Schema` permissions and merges default roles with service specific roles, so consider this method as recommended way of `Schema` initialization.
 
--   **DefineSchema(DefaultRoles []Role, Services []Service)** - Initializing new variable and assign `Schema` to it.
+-   **NewSchemaBuilder** - Creates builder for schema. When all desired fields will be set use method `Build`, which will assign schema that was built to `Schema` variable.
 
 ### ROLES
 
 Roles can be specified by default or services can have their own roles.
 
+> [!NOTE]
 > Service specific roles will overwrite default roles!
 
 You can also select one of default roles as origin role, all new users must have this role in your application.
 
 ### PERMISSIONS
 
-Permissions can be specified by using special tags. Now there are 10 permission tags:
+There are 11 permissions:
 
--   C (Create) - can create any entities
+> [!NOTE]
+> The user himself is also an entity.
 
--   SC (Self Create) - can create entities, which will belong to this user
+-   Create - can create any entities.
 
--   R (Read) - can read any entity
+-   Self Create - can create entities, which will be related to this user.
 
--   SR (Self Read) - can read entities, that was created by this user (also can read himself)
+-   Read - can read any entity.
 
--   U (Update) - can modify any entity
+-   Self Read - can read entities, related to this user.
 
--   SU (Self Update) - can modify entities, that was created by this user (also can update himself)
+-   Update - can modify any entity.
 
--   D (Delete) - can delete any entity
+-   Self Update - can modify entities, related to this user.
 
--   SD (Delete) - can delete entities, that was created by this user
+-   Delete - can delete any entity.
 
--   M (Moderator) - can do moderator-specific actions and have C, R, U, D permissions, even if they are not specified.
+-   Delete - can delete entities, related to this user.
 
--   A (Admin) - full access
+-   Service - can do service-specific actions, this permission can also be used to determine whether a user is a service.
+
+-   Moderator - pretty same as Service, but also have C, R, U, D permissions, even if they are not specified.
+
+-   Admin - full access.
 
 ### CONFIG EXAMPLE
 
@@ -47,27 +53,27 @@ Permissions can be specified by using special tags. Now there are 10 permission 
     "default-roles": [
         {
             "name": "unconfirmed_user",
-            "permissions": ["SD"]
+            "permissions": ["SELF-DELETE"]
         },
         {
             "name": "restricted_user",
-            "permissions": ["SR"]
+            "permissions": ["SELF-READ"]
         },
         {
             "name": "user",
-            "permissions": ["SR", "SU", "SD"]
+            "permissions": ["SELF-READ", "SELF-UPDATE", "SELF-DELETE"]
         },
         {
             "name": "support",
-            "permissions": ["R", "SU"]
+            "permissions": ["READ", "SELF-UPDATE"]
         },
         {
             "name": "moderator",
-            "permissions": ["M"]
+            "permissions": ["MODERATOR"]
         },
         {
             "name": "admin",
-            "permissions": ["A"]
+            "permissions": ["ADMIN"]
         }
     ],
     "origing-role": "unconfirmed_user",
@@ -78,7 +84,7 @@ Permissions can be specified by using special tags. Now there are 10 permission 
             "roles": [
                 {
                     "name": "user",
-                    "permissions": ["R", "SU", "SD"]
+                    "permissions": ["READ", "SELF-UPDATE", "SELF-DELETE"]
                 }
             ]
         }
