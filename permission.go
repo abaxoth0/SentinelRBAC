@@ -4,41 +4,48 @@ import (
 	"slices"
 )
 
-type PermissionTag string
+type permission string
 
-func (p PermissionTag) String() string {
+func (p permission) String() string {
 	return string(p)
 }
 
-const CreatePermissionTag PermissionTag = "C"
-const SelfCreatePermissionTag PermissionTag = "SC"
+const CreatePermission permission = "CREATE"
+const SelfCreatePermission permission = "SELF-CREATE"
 
-const ReadPermissionTag PermissionTag = "R"
-const SelfReadPermissionTag PermissionTag = "SR"
+const ReadPermission permission = "READ"
+const SelfReadPermission permission = "SELF-READ"
 
-const UpdatePermissionTag PermissionTag = "U"
-const SelfUpdatePermissionTag PermissionTag = "SU"
+const UpdatePermission permission = "UPDATE"
+const SelfUpdatePermission permission = "SELF-UPDATE"
 
-const DeletePermissionTag PermissionTag = "D"
-const SelfDeletePermissionTag PermissionTag = "SD"
+const DeletePermission permission = "DELETE"
+const SelfDeletePermission permission = "SELF-DELETE"
 
-const ModeratorPermissionTag PermissionTag = "M"
-const AdminPermissionTag PermissionTag = "A"
+const ModeratorPermission permission = "MODERATOR"
+const AdminPermission permission = "ADMIN"
+const ServicePermission permission = "SERVICE"
 
-var PermissionTags []PermissionTag = []PermissionTag{
-	CreatePermissionTag,
-	SelfCreatePermissionTag,
-	ReadPermissionTag,
-	SelfReadPermissionTag,
-	UpdatePermissionTag,
-	SelfUpdatePermissionTag,
-	DeletePermissionTag,
-	SelfDeletePermissionTag,
-	ModeratorPermissionTag,
-	AdminPermissionTag,
+var permissions [11]permission = [11]permission{
+	CreatePermission,
+	SelfCreatePermission,
+	ReadPermission,
+	SelfReadPermission,
+	UpdatePermission,
+	SelfUpdatePermission,
+	DeletePermission,
+	SelfDeletePermission,
+	ModeratorPermission,
+	AdminPermission,
+	ServicePermission,
 }
 
-type Permissions struct {
+// Returns an array of all available permissions.
+func Permissions() [11]permission {
+	return permissions
+}
+
+type PermissionsTable struct {
 	Create     bool
 	SelfCreate bool
 	Read       bool
@@ -49,37 +56,39 @@ type Permissions struct {
 	SelfDelete bool
 	Admin      bool
 	Moderator  bool
+	Service    bool
 }
 
-var InsufficientPermission *Error = NewError("Недостаточно прав для выполнения данной операции")
+var InsufficientPermissions *Error = NewError("Insufficient permissions to perform this action")
 
-// Converts a slice of PermissionTag into a *permissions.
+// Converts a slice of Permission into a PermissionsTable.
 //
 // It doesn't check if a permission is valid or not, it just sets the corresponding
-// boolean field of the *permissions to true if the permission is present in the
+// boolean field of the PermissionsTable to true if the permission is present in the
 // slice.
-func GetPermissions(tags []PermissionTag) *Permissions {
-	return &Permissions{
-		Admin:      slices.Contains(tags, AdminPermissionTag),
-		Moderator:  slices.Contains(tags, ModeratorPermissionTag),
-		Create:     slices.Contains(tags, CreatePermissionTag),
-		SelfCreate: slices.Contains(tags, SelfCreatePermissionTag),
-		Read:       slices.Contains(tags, ReadPermissionTag),
-		SelfRead:   slices.Contains(tags, SelfReadPermissionTag),
-		Update:     slices.Contains(tags, UpdatePermissionTag),
-		SelfUpdate: slices.Contains(tags, SelfUpdatePermissionTag),
-		Delete:     slices.Contains(tags, DeletePermissionTag),
-		SelfDelete: slices.Contains(tags, SelfDeletePermissionTag),
+func ParsePermissions(p []permission) *PermissionsTable {
+	return &PermissionsTable{
+		Service:    slices.Contains(p, ServicePermission),
+		Admin:      slices.Contains(p, AdminPermission),
+		Moderator:  slices.Contains(p, ModeratorPermission),
+		Create:     slices.Contains(p, CreatePermission),
+		SelfCreate: slices.Contains(p, SelfCreatePermission),
+		Read:       slices.Contains(p, ReadPermission),
+		SelfRead:   slices.Contains(p, SelfReadPermission),
+		Update:     slices.Contains(p, UpdatePermission),
+		SelfUpdate: slices.Contains(p, SelfUpdatePermission),
+		Delete:     slices.Contains(p, DeletePermission),
+		SelfDelete: slices.Contains(p, SelfDeletePermission),
 	}
 }
 
-func VerifyPermissions(required *Permissions, permitted *Permissions) *Error {
+func (required *PermissionsTable) Permit(permitted *PermissionsTable) *Error {
 	if required.Admin && !permitted.Admin {
-		return InsufficientPermission
+		return InsufficientPermissions
 	}
 
 	if required.Moderator && (!permitted.Moderator || !permitted.Admin) {
-		return InsufficientPermission
+		return InsufficientPermissions
 	}
 
 	// Admins and moderators can do all CRUD operations (even if corresponding permissions are not specified for them)
@@ -90,35 +99,35 @@ func VerifyPermissions(required *Permissions, permitted *Permissions) *Error {
 	// CRUD operations
 
 	if required.Create && (!permitted.Create) {
-		return InsufficientPermission
+		return InsufficientPermissions
 	}
 
 	if required.SelfCreate && (!permitted.Create || !permitted.SelfCreate) {
-		return InsufficientPermission
+		return InsufficientPermissions
 	}
 
 	if required.Create && (!permitted.Create) {
-		return InsufficientPermission
+		return InsufficientPermissions
 	}
 
 	if required.SelfRead && (!permitted.Read || !permitted.SelfRead) {
-		return InsufficientPermission
+		return InsufficientPermissions
 	}
 
 	if required.Update && (!permitted.Update) {
-		return InsufficientPermission
+		return InsufficientPermissions
 	}
 
 	if required.SelfUpdate && (!permitted.Update || !permitted.SelfUpdate) {
-		return InsufficientPermission
+		return InsufficientPermissions
 	}
 
 	if required.Delete && (!permitted.Delete) {
-		return InsufficientPermission
+		return InsufficientPermissions
 	}
 
 	if required.SelfDelete && (!permitted.Delete || !permitted.SelfDelete) {
-		return InsufficientPermission
+		return InsufficientPermissions
 	}
 
 	return nil

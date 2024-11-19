@@ -9,8 +9,8 @@ type Service struct {
 var CurrentService *Service
 
 func GetService(ID string) (*Service, *Error) {
-	if !IsSchemaLoaded() {
-		return nil, NewError("RBAC is not loaded")
+	if Schema == nil {
+		return nil, NewError("RBAC schema is not defined")
 	}
 
 	if ID == "" {

@@ -1,10 +1,8 @@
 package rbac
 
-type ActionName string
-
 type Action struct {
-	Name                ActionName
-	RequiredPermissions []PermissionTag
+	Name                string
+	RequiredPermissions []permission
 }
 
 // Checks if the user with the given role has enough permissions to perform the given operation.
@@ -22,5 +20,5 @@ func (operation Action) Authorize(userRoleName string) *Error {
 		return err
 	}
 
-	return VerifyPermissions(GetPermissions(operation.RequiredPermissions), GetPermissions(userRole.Permissions))
+	return ParsePermissions(operation.RequiredPermissions).Permit(ParsePermissions(userRole.Permissions))
 }

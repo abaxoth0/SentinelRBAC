@@ -11,6 +11,7 @@ import (
 	"slices"
 )
 
+// Only one instance of schema must exist at a time.
 type schema struct {
 	isLoaded bool
 	// Role wich will have all new users, must correspond with one of the default roles' name. (optional)
@@ -21,14 +22,96 @@ type schema struct {
 
 var Schema *schema
 
-// Initializes the Schema variable with the given default roles and services.
-// If you want to load RBAC configuration from a file, use LoadSchema instead.
-func DefineSchema(DefaultRoles []*Role, Services []*Service) {
-	Schema = &schema{
-		isLoaded:     true,
-		DefaultRoles: DefaultRoles,
-		Services:     Services,
+type SchemaBuilder struct {
+	s *schema
+}
+
+func NewSchemaBuilder() *SchemaBuilder {
+	return &SchemaBuilder{
+		s: &schema{
+			isLoaded: false,
+		},
 	}
+}
+
+// Build validates the configuration, merges service permissions with default roles'
+// permissions and sets rbac.Schema to the built configuration.
+//
+// If the configuration is invalid, it returns an error.
+//
+// Otherwise, it returns nil.
+func (builder *SchemaBuilder) Build() error {
+	if err := validateSchema(builder.s); err != nil {
+		return err
+	}
+
+	mergeServicePermissions(builder.s)
+
+	builder.s.isLoaded = true
+
+	Schema = builder.s
+
+	return nil
+}
+
+func (builder *SchemaBuilder) Reset() *SchemaBuilder {
+	builder.s = &schema{
+		isLoaded: false,
+	}
+
+	return builder
+}
+
+func (builder *SchemaBuilder) SetDefaultRoles(defaultRoles []*Role) *SchemaBuilder {
+	builder.s.DefaultRoles = defaultRoles
+
+	return builder
+}
+
+func (builder *SchemaBuilder) AddDefaultRole(role *Role) *SchemaBuilder {
+	builder.s.DefaultRoles = append(builder.s.DefaultRoles, role)
+
+	return builder
+}
+
+func (builder *SchemaBuilder) RemoveDefaultRole(roleName string) *SchemaBuilder {
+	for i, role := range builder.s.DefaultRoles {
+		if role.Name == roleName {
+			builder.s.DefaultRoles = append(builder.s.DefaultRoles[:i], builder.s.DefaultRoles[i+1:]...)
+			break
+		}
+	}
+
+	return builder
+}
+
+func (builder *SchemaBuilder) SetOriginRoleName(roleName string) *SchemaBuilder {
+	builder.s.OriginRoleName = roleName
+
+	return builder
+}
+
+func (builder *SchemaBuilder) SetServices(services []*Service) *SchemaBuilder {
+	builder.s.Services = services
+
+	return builder
+}
+
+func (builder *SchemaBuilder) AddService(service *Service) *SchemaBuilder {
+	builder.s.Services = append(builder.s.Services, service)
+
+	return builder
+}
+
+func (builder *SchemaBuilder) RemoveService(serviceName string) *SchemaBuilder {
+	for i, service := range builder.s.Services {
+		if service.Name == serviceName {
+			builder.s.Services = append(builder.s.Services[:i], builder.s.Services[i+1:]...)
+			break
+		}
+	}
+
+	return builder
 }
 
 // Reads the RBAC configuration file from the given path,
@@ -72,7 +155,7 @@ func LoadSchema(path string) error {
 
 	log.Println("[ RBAC ] Checking configuration...")
 
-	if err = ValidateSchema(Schema); err != nil {
+	if err = validateSchema(Schema); err != nil {
 		return err
 	}
 
@@ -80,18 +163,14 @@ func LoadSchema(path string) error {
 
 	log.Println("[ RBAC ] Merging services permissions...")
 
-	MergeServicePermissions(Schema)
+	mergeServicePermissions(Schema)
 
 	log.Println("[ RBAC ] Merging service permissions: OK")
 
 	return nil
 }
 
-func IsSchemaLoaded() bool {
-	return Schema != nil
-}
-
-func ValidateSchema(schema *schema) error {
+func validateSchema(schema *schema) error {
 	if len(schema.Services) == 0 {
 		return errors.New("no services defined")
 	}
@@ -104,7 +183,7 @@ func ValidateSchema(schema *schema) error {
 		}
 
 		for _, permission := range defaultRole.Permissions {
-			if !slices.Contains(PermissionTags, permission) {
+			if !slices.Contains(permissions[:], permission) {
 				err := fmt.Sprintf("invalid permission \"%s\" in default role: \"%s\"", string(permission), defaultRole.Name)
 				return errors.New(err)
 			}
@@ -119,7 +198,7 @@ func ValidateSchema(schema *schema) error {
 	for _, service := range schema.Services {
 		for _, serviceRole := range service.Roles {
 			for _, permission := range serviceRole.Permissions {
-				if !slices.Contains(PermissionTags, permission) {
+				if !slices.Contains(permissions[:], permission) {
 					err := fmt.Sprintf("invalid permission \"%s\" in \"%s\" role: \"%s\"", string(permission), service.Name, serviceRole.Name)
 					return errors.New(err)
 				}
@@ -132,7 +211,7 @@ func ValidateSchema(schema *schema) error {
 
 // Merges permissions from service specific roles with default roles.
 // If service has a role with the same name as default role, service role overwrites default role.
-func MergeServicePermissions(schema *schema) {
+func mergeServicePermissions(schema *schema) {
 	for _, service := range schema.Services {
 		var roles []*Role = []*Role{}
 
