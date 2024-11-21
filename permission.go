@@ -1,32 +1,28 @@
 package rbac
 
-import (
-	"slices"
-)
+type Permission string
 
-type permission string
-
-func (p permission) String() string {
+func (p Permission) String() string {
 	return string(p)
 }
 
-const CreatePermission permission = "CREATE"
-const SelfCreatePermission permission = "SELF-CREATE"
+const CreatePermission Permission = "CREATE"
+const SelfCreatePermission Permission = "SELF-CREATE"
 
-const ReadPermission permission = "READ"
-const SelfReadPermission permission = "SELF-READ"
+const ReadPermission Permission = "READ"
+const SelfReadPermission Permission = "SELF-READ"
 
-const UpdatePermission permission = "UPDATE"
-const SelfUpdatePermission permission = "SELF-UPDATE"
+const UpdatePermission Permission = "UPDATE"
+const SelfUpdatePermission Permission = "SELF-UPDATE"
 
-const DeletePermission permission = "DELETE"
-const SelfDeletePermission permission = "SELF-DELETE"
+const DeletePermission Permission = "DELETE"
+const SelfDeletePermission Permission = "SELF-DELETE"
 
-const ModeratorPermission permission = "MODERATOR"
-const AdminPermission permission = "ADMIN"
-const ServicePermission permission = "SERVICE"
+const ModeratorPermission Permission = "MODERATOR"
+const AdminPermission Permission = "ADMIN"
+const ServicePermission Permission = "SERVICE"
 
-var permissions [11]permission = [11]permission{
+var permissions [11]Permission = [11]Permission{
 	CreatePermission,
 	SelfCreatePermission,
 	ReadPermission,
@@ -41,7 +37,7 @@ var permissions [11]permission = [11]permission{
 }
 
 // Returns an array of all available permissions.
-func Permissions() [11]permission {
+func Permissions() [11]Permission {
 	return permissions
 }
 
@@ -66,22 +62,46 @@ var InsufficientPermissions *Error = NewError("Insufficient permissions to perfo
 // It doesn't check if a permission is valid or not, it just sets the corresponding
 // boolean field of the PermissionsTable to true if the permission is present in the
 // slice.
-func ParsePermissions(p []permission) *PermissionsTable {
-	return &PermissionsTable{
-		Service:    slices.Contains(p, ServicePermission),
-		Admin:      slices.Contains(p, AdminPermission),
-		Moderator:  slices.Contains(p, ModeratorPermission),
-		Create:     slices.Contains(p, CreatePermission),
-		SelfCreate: slices.Contains(p, SelfCreatePermission),
-		Read:       slices.Contains(p, ReadPermission),
-		SelfRead:   slices.Contains(p, SelfReadPermission),
-		Update:     slices.Contains(p, UpdatePermission),
-		SelfUpdate: slices.Contains(p, SelfUpdatePermission),
-		Delete:     slices.Contains(p, DeletePermission),
-		SelfDelete: slices.Contains(p, SelfDeletePermission),
+func ParsePermissions(p []Permission) *PermissionsTable {
+	var r = PermissionsTable{}
+
+	for _, permission := range p {
+		switch permission {
+		case CreatePermission:
+			r.Create = true
+		case SelfCreatePermission:
+			r.SelfCreate = true
+		case ReadPermission:
+			r.Read = true
+		case SelfReadPermission:
+			r.SelfRead = true
+		case UpdatePermission:
+			r.Update = true
+		case SelfUpdatePermission:
+			r.SelfUpdate = true
+		case DeletePermission:
+			r.Delete = true
+		case SelfDeletePermission:
+			r.SelfDelete = true
+		case ModeratorPermission:
+			r.Moderator = true
+		case AdminPermission:
+			r.Admin = true
+		case ServicePermission:
+			r.Service = true
+		default:
+			panic("invalid permission: " + permission.String())
+		}
 	}
+
+	return &r
 }
 
+// Checks if the "permitted" permissions are sufficient to satisfy the "required" permissions.
+// It returns nil if all "required" permissions are covered by the "permitted" permissions; otherwise,
+// it returns an InsufficientPermissions error.
+//
+// Admins and moderators have full CRUD capabilities regardless of specific permissions.
 func (required *PermissionsTable) Permit(permitted *PermissionsTable) *Error {
 	if required.Admin && !permitted.Admin {
 		return InsufficientPermissions

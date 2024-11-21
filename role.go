@@ -4,7 +4,7 @@ import "slices"
 
 type Role struct {
 	Name        string       `json:"name"`
-	Permissions []permission `json:"permissions"`
+	Permissions []Permission `json:"permissions"`
 }
 
 const NoneRole string = "none"

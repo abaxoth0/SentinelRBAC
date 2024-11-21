@@ -2,7 +2,7 @@ package rbac
 
 type Action struct {
 	Name                string
-	RequiredPermissions []permission
+	RequiredPermissions []Permission
 }
 
 // Checks if the user with the given role has enough permissions to perform the given operation.
