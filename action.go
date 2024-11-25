@@ -9,7 +9,7 @@ type Action struct {
 // If the user has enough permissions, it returns nil, otherwise it returns an error.
 //
 // This method must be called after setting rbac.CurrentService, otherwise it will panic.
-func (operation Action) Authorize(userRoleName string) *Error {
+func (operation Action) Permit(userRoleName string) *Error {
 	if CurrentService == nil {
 		panic("CurrentService is not set")
 	}
@@ -20,5 +20,5 @@ func (operation Action) Authorize(userRoleName string) *Error {
 		return err
 	}
 
-	return ParsePermissions(operation.RequiredPermissions).Permit(ParsePermissions(userRole.Permissions))
+	return Authorize(ParsePermissions(operation.RequiredPermissions), (ParsePermissions(userRole.Permissions)))
 }
