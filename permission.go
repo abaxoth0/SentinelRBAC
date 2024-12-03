@@ -18,11 +18,7 @@ const SelfUpdatePermission Permission = "SELF-UPDATE"
 const DeletePermission Permission = "DELETE"
 const SelfDeletePermission Permission = "SELF-DELETE"
 
-const ModeratorPermission Permission = "MODERATOR"
-const AdminPermission Permission = "ADMIN"
-const ServicePermission Permission = "SERVICE"
-
-var permissions [11]Permission = [11]Permission{
+var permissions [8]Permission = [8]Permission{
 	CreatePermission,
 	SelfCreatePermission,
 	ReadPermission,
@@ -31,17 +27,9 @@ var permissions [11]Permission = [11]Permission{
 	SelfUpdatePermission,
 	DeletePermission,
 	SelfDeletePermission,
-	ModeratorPermission,
-	AdminPermission,
-	ServicePermission,
 }
 
-// Returns an array of all available permissions.
-func Permissions() [11]Permission {
-	return permissions
-}
-
-type PermissionsTable struct {
+type Permissions struct {
 	Create     bool
 	SelfCreate bool
 	Read       bool
@@ -50,9 +38,6 @@ type PermissionsTable struct {
 	SelfUpdate bool
 	Delete     bool
 	SelfDelete bool
-	Admin      bool
-	Moderator  bool
-	Service    bool
 }
 
 var InsufficientPermissions *Error = NewError("Insufficient permissions to perform this action")
@@ -62,8 +47,8 @@ var InsufficientPermissions *Error = NewError("Insufficient permissions to perfo
 // It doesn't check if a permission is valid or not, it just sets the corresponding
 // boolean field of the PermissionsTable to true if the permission is present in the
 // slice.
-func ParsePermissions(p []Permission) *PermissionsTable {
-	var r = PermissionsTable{}
+func ParsePermissions(p []Permission) *Permissions {
+	var r = Permissions{}
 
 	for _, permission := range p {
 		switch permission {
@@ -83,12 +68,6 @@ func ParsePermissions(p []Permission) *PermissionsTable {
 			r.Delete = true
 		case SelfDeletePermission:
 			r.SelfDelete = true
-		case ModeratorPermission:
-			r.Moderator = true
-		case AdminPermission:
-			r.Admin = true
-		case ServicePermission:
-			r.Service = true
 		default:
 			panic("invalid permission: " + permission.String())
 		}
