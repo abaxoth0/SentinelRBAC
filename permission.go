@@ -1,32 +1,36 @@
 package rbac
 
-type Permission string
+type PermissionTag string
 
-func (p Permission) String() string {
+func (p PermissionTag) String() string {
 	return string(p)
 }
 
-const CreatePermission Permission = "CREATE"
-const SelfCreatePermission Permission = "SELF-CREATE"
+const CreateTag PermissionTag = "CREATE"
+const SelfCreateTag PermissionTag = "SELF-CREATE"
 
-const ReadPermission Permission = "READ"
-const SelfReadPermission Permission = "SELF-READ"
+const ReadTag PermissionTag = "READ"
+const SelfReadTag PermissionTag = "SELF-READ"
 
-const UpdatePermission Permission = "UPDATE"
-const SelfUpdatePermission Permission = "SELF-UPDATE"
+const UpdateTag PermissionTag = "UPDATE"
+const SelfUpdateTag PermissionTag = "SELF-UPDATE"
 
-const DeletePermission Permission = "DELETE"
-const SelfDeletePermission Permission = "SELF-DELETE"
+const DeleteTag PermissionTag = "DELETE"
+const SelfDeleteTag PermissionTag = "SELF-DELETE"
 
-var permissions [8]Permission = [8]Permission{
-	CreatePermission,
-	SelfCreatePermission,
-	ReadPermission,
-	SelfReadPermission,
-	UpdatePermission,
-	SelfUpdatePermission,
-	DeletePermission,
-	SelfDeletePermission,
+var tags [8]PermissionTag = [8]PermissionTag{
+	CreateTag,
+	SelfCreateTag,
+	ReadTag,
+	SelfReadTag,
+	UpdateTag,
+	SelfUpdateTag,
+	DeleteTag,
+	SelfDeleteTag,
+}
+
+func Tags() [8]PermissionTag {
+	return tags
 }
 
 type Permissions struct {
@@ -42,34 +46,33 @@ type Permissions struct {
 
 var InsufficientPermissions *Error = NewError("Insufficient permissions to perform this action")
 
-// Converts a slice of Permission into a PermissionsTable.
+// Converts a slice of permission tags into a permissions.
 //
-// It doesn't check if a permission is valid or not, it just sets the corresponding
-// boolean field of the PermissionsTable to true if the permission is present in the
-// slice.
-func ParsePermissions(p []Permission) *Permissions {
+// It doesn't check if a tag is valid or not, it just sets the corresponding
+// boolean field of the Permissions to true if the tag is present in the slice.
+func ParseTags(p []PermissionTag) *Permissions {
 	var r = Permissions{}
 
-	for _, permission := range p {
-		switch permission {
-		case CreatePermission:
+	for _, tag := range p {
+		switch tag {
+		case CreateTag:
 			r.Create = true
-		case SelfCreatePermission:
+		case SelfCreateTag:
 			r.SelfCreate = true
-		case ReadPermission:
+		case ReadTag:
 			r.Read = true
-		case SelfReadPermission:
+		case SelfReadTag:
 			r.SelfRead = true
-		case UpdatePermission:
+		case UpdateTag:
 			r.Update = true
-		case SelfUpdatePermission:
+		case SelfUpdateTag:
 			r.SelfUpdate = true
-		case DeletePermission:
+		case DeleteTag:
 			r.Delete = true
-		case SelfDeletePermission:
+		case SelfDeleteTag:
 			r.SelfDelete = true
 		default:
-			panic("invalid permission: " + permission.String())
+			panic("invalid permission tag: " + tag.String())
 		}
 	}
 

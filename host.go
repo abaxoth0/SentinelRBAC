@@ -107,9 +107,9 @@ func validateHost(host *host) error {
 			isOriginRoleFound = true
 		}
 
-		for _, permission := range defaultRole.Permissions {
-			if !slices.Contains(permissions[:], permission) {
-				err := fmt.Sprintf("invalid permission \"%s\" in default role: \"%s\"", string(permission), defaultRole.Name)
+		for _, tag := range defaultRole.Permissions {
+			if !slices.Contains(tags[:], tag) {
+				err := fmt.Sprintf("invalid permission tag \"%s\" in default role: \"%s\"", tag.String(), defaultRole.Name)
 				return errors.New(err)
 			}
 		}
@@ -122,9 +122,9 @@ func validateHost(host *host) error {
 
 	for _, schema := range host.Schemas {
 		for _, serviceRole := range schema.Roles {
-			for _, permission := range serviceRole.Permissions {
-				if !slices.Contains(permissions[:], permission) {
-					err := fmt.Sprintf("invalid permission \"%s\" in \"%s\" role: \"%s\"", string(permission), schema.Name, serviceRole.Name)
+			for _, tag := range serviceRole.Permissions {
+				if !slices.Contains(tags[:], tag) {
+					err := fmt.Sprintf("invalid permission tag \"%s\" in \"%s\" role: \"%s\"", tag.String(), schema.Name, serviceRole.Name)
 					return errors.New(err)
 				}
 			}

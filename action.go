@@ -1,6 +1,7 @@
 package rbac
 
-type Action struct {
-	Name                string
-	RequiredPermissions *Permissions
+type action string
+
+func (a action) String() string {
+	return string(a)
 }
