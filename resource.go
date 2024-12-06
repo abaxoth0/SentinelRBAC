@@ -12,7 +12,10 @@ func NewResource(name string, roles []*Role) *resource {
 	}
 
 	for _, role := range roles {
-		r.Permissions[role.Name] = role.Permissions
+		// Deep copy, so if permissions will be changed in resource, it won't affect "role"
+		p := *role.Permissions
+
+		r.Permissions[role.Name] = &p
 	}
 
 	return r

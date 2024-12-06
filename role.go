@@ -11,3 +11,13 @@ func NewRole(name string, permissions *Permissions) *Role {
 		Permissions: permissions,
 	}
 }
+
+func GetRolesNames(roles []*Role) []string {
+	names := []string{}
+
+	for _, role := range roles {
+		names = append(names, role.Name)
+	}
+
+	return names
+}
