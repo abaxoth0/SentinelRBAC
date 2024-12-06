@@ -6,8 +6,6 @@ All roles and services are defined into variable named `Schema`, it's `nil` by d
 
 -   **LoadSchema(path string)** - Open and reads configuration file (JSON) at the specified path, then this method parse it and assign to `Schema` variable. This method also validates `Schema` permissions and merges default roles with service specific roles, so consider this method as recommended way of `Schema` initialization.
 
--   **NewSchemaBuilder** - Creates builder for schema. When all desired fields will be set use method `Build`, which will assign schema that was built to `Schema` variable.
-
 ### ROLES
 
 Roles can be specified by default or services can have their own roles.
@@ -19,7 +17,7 @@ You can also select one of default roles as origin role, all new users must have
 
 ### PERMISSIONS
 
-There are 11 permissions:
+There are 8 permissions:
 
 > [!NOTE]
 > The user himself is also an entity.
@@ -40,12 +38,6 @@ There are 11 permissions:
 
 -   Delete - can delete entities, related to this user.
 
--   Service - can do service-specific actions, this permission can also be used to determine whether a user is a service.
-
--   Moderator - pretty same as Service, but also have C, R, U, D permissions, even if they are not specified.
-
--   Admin - full access.
-
 ### CONFIG EXAMPLE
 
 ```json
@@ -53,38 +45,101 @@ There are 11 permissions:
     "default-roles": [
         {
             "name": "unconfirmed_user",
-            "permissions": ["SELF-DELETE"]
+            "permissions": {
+                "read": false,
+                "self-read": false,
+                "create": false,
+                "self-create": false,
+                "update": false,
+                "self-update": false,
+                "delete": false,
+                "self-delete": true
+            }
         },
         {
             "name": "restricted_user",
-            "permissions": ["SELF-READ"]
+            "permissions": {
+                "read": false,
+                "self-read": true,
+                "create": false,
+                "self-create": false,
+                "update": false,
+                "self-update": false,
+                "delete": false,
+                "self-delete": true
+            }
         },
         {
             "name": "user",
-            "permissions": ["SELF-READ", "SELF-UPDATE", "SELF-DELETE"]
+            "permissions": {
+                "read": false,
+                "self-read": true,
+                "create": false,
+                "self-create": false,
+                "update": false,
+                "self-update": true,
+                "delete": false,
+                "self-delete": true
+            }
         },
         {
             "name": "support",
-            "permissions": ["READ", "SELF-UPDATE"]
+            "permissions": {
+                "read": true,
+                "self-read": false,
+                "create": false,
+                "self-create": false,
+                "update": false,
+                "self-update": true,
+                "delete": false,
+                "self-delete": false
+            }
         },
         {
             "name": "moderator",
-            "permissions": ["MODERATOR"]
+            "permissions": {
+                "read": true,
+                "self-read": true,
+                "create": true,
+                "self-create": true,
+                "update": true,
+                "self-update": true,
+                "delete": true,
+                "self-delete": true
+            }
         },
         {
             "name": "admin",
-            "permissions": ["ADMIN"]
+            "permissions": {
+                "read": true,
+                "self-read": true,
+                "create": true,
+                "self-create": true,
+                "update": true,
+                "self-update": true,
+                "delete": true,
+                "self-delete": true
+            }
         }
     ],
     "origing-role": "unconfirmed_user",
-    "services": [
+    "schemas": [
         {
             "id": "5b87cfb3-4d13-4d1d-ab3d-44d5d0c17b8a",
-            "name": "some-service",
+            "name": "post-service",
             "roles": [
                 {
-                    "name": "user",
-                    "permissions": ["READ", "SELF-UPDATE", "SELF-DELETE"]
+                    "name": "unconfirmed_user",
+                    "permissions": {
+                        "read": false,
+                        "self-read": true,
+                        "create": false,
+                        "self-create": false,
+                        "update": false,
+                        "self-update": false,
+                        "delete": false,
+                        "self-delete": false
+                    }
                 }
             ]
         }
