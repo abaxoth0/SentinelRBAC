@@ -8,7 +8,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"slices"
 )
 
 type host struct {
@@ -80,7 +79,7 @@ func LoadHost(path string) error {
 
 	log.Println("[ RBAC ] Checking host configuration...")
 
-	if err = validateHost(Host); err != nil {
+	if err = Host.Validate(); err != nil {
 		return err
 	}
 
@@ -88,14 +87,14 @@ func LoadHost(path string) error {
 
 	log.Println("[ RBAC ] Merging schemas permissions...")
 
-	mergeSchemasPermissions(Host)
+	Host.MergePermissions()
 
 	log.Println("[ RBAC ] Merging schemas permissions: OK")
 
 	return nil
 }
 
-func validateHost(host *host) error {
+func (host *host) Validate() error {
 	if len(host.Schemas) == 0 {
 		return errors.New("at least one schema must be defined")
 	}
@@ -106,13 +105,6 @@ func validateHost(host *host) error {
 		if defaultRole.Name == host.OriginRoleName {
 			isOriginRoleFound = true
 		}
-
-		for _, tag := range defaultRole.Permissions {
-			if !slices.Contains(tags[:], tag) {
-				err := fmt.Sprintf("invalid permission tag \"%s\" in default role: \"%s\"", tag.String(), defaultRole.Name)
-				return errors.New(err)
-			}
-		}
 	}
 
 	if host.OriginRoleName != "" && !isOriginRoleFound {
@@ -120,25 +112,14 @@ func validateHost(host *host) error {
 		return errors.New(err)
 	}
 
-	for _, schema := range host.Schemas {
-		for _, serviceRole := range schema.Roles {
-			for _, tag := range serviceRole.Permissions {
-				if !slices.Contains(tags[:], tag) {
-					err := fmt.Sprintf("invalid permission tag \"%s\" in \"%s\" role: \"%s\"", tag.String(), schema.Name, serviceRole.Name)
-					return errors.New(err)
-				}
-			}
-		}
-	}
-
 	return nil
 }
 
 // Merges permissions from schema specific roles with default roles.
 // If schema has a role with the same name as default role, schema role overwrites default role.
-func mergeSchemasPermissions(host *host) {
+func (host *host) MergePermissions() {
 	for _, schema := range host.Schemas {
-		var roles []*Role = []*Role{}
+		roles := []*Role{}
 
 		for _, schemaRole := range schema.Roles {
 			for _, defaultRole := range host.DefaultRoles {

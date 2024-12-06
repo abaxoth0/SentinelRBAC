@@ -11,3 +11,5 @@ func (e *Error) Error() string {
 func NewError(message string) *Error {
 	return &Error{message}
 }
+
+var InsufficientPermissions *Error = NewError("Insufficient permissions to perform this action")
