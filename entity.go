@@ -56,7 +56,7 @@ func (e *entity) SetAuthorizationFunc(fn AuthorizationFunc) {
 	e.authorize = fn
 }
 
-func (e *entity) AuthorizeAction(act action, resource *resource, userRoles []*Role) error {
+func (e *entity) AuthorizeAction(act action, resource *resource, roles []*Role) error {
 	requiredPermissions := e.actions[act]
 
 	if requiredPermissions == nil {
@@ -65,7 +65,7 @@ func (e *entity) AuthorizeAction(act action, resource *resource, userRoles []*Ro
 
 	permitted := false
 
-	for _, role := range userRoles {
+	for _, role := range roles {
 		permissions := resource.Permissions[role.Name]
 
 		if permissions == nil {
