@@ -56,7 +56,7 @@ func (e *entity) SetAuthorizationFunc(fn AuthorizationFunc) {
 	e.authorize = fn
 }
 
-func (e *entity) AuthorizeAction(act action, resource *Resource, userRoles ...*Role) error {
+func (e *entity) AuthorizeAction(act action, resource *resource, userRoles []*Role) error {
 	requiredPermissions := e.actions[act]
 
 	if requiredPermissions == nil {
