@@ -1,12 +1,12 @@
 package rbac
 
-type resource struct {
+type Resource struct {
 	Name        string
 	Permissions map[string]*Permissions
 }
 
-func NewResource(name string, roles []*Role) *resource {
-	r := &resource{
+func NewResource(name string, roles []*Role) *Resource {
+	r := &Resource{
 		Name:        name,
 		Permissions: make(map[string]*Permissions),
 	}

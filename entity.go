@@ -4,10 +4,10 @@ import (
 	"errors"
 )
 
-type entity struct {
+type Entity struct {
 	Name string
 	// Action's "Permissions" is required permissions for this specific action
-	actions   map[action]*Permissions
+	actions   map[Action]*Permissions
 	authorize AuthorizationFunc
 }
 
@@ -15,16 +15,16 @@ type entity struct {
 //
 // This function initializes an empty map for actions and sets the default
 // authorization function to "rbac.Authorize".
-func NewEntity(name string) *entity {
-	return &entity{
+func NewEntity(name string) *Entity {
+	return &Entity{
 		Name:      name,
-		actions:   make(map[action]*Permissions),
+		actions:   make(map[Action]*Permissions),
 		authorize: Authorize,
 	}
 }
 
-func (e *entity) NewAction(name string, requiredPermissions *Permissions) action {
-	act := action(name)
+func (e *Entity) NewAction(name string, requiredPermissions *Permissions) Action {
+	act := Action(name)
 
 	if e.HasAction(act) {
 		panic("action \"" + name + "\" already exists in \"" + e.Name + "\" entity")
@@ -35,11 +35,11 @@ func (e *entity) NewAction(name string, requiredPermissions *Permissions) action
 	return act
 }
 
-func (e *entity) RemoveAction(act action) {
+func (e *Entity) RemoveAction(act Action) {
 	delete(e.actions, act)
 }
 
-func (e *entity) HasAction(act action) bool {
+func (e *Entity) HasAction(act Action) bool {
 	_, ok := e.actions[act]
 
 	return ok
@@ -48,7 +48,7 @@ func (e *entity) HasAction(act action) bool {
 // Changes the authorization function of the entity.
 //
 // The default authorization function is "rbac.Authorize".
-func (e *entity) SetAuthorizationFunc(fn AuthorizationFunc) {
+func (e *Entity) SetAuthorizationFunc(fn AuthorizationFunc) {
 	if fn == nil {
 		panic("authorization function can't be nil")
 	}
@@ -56,7 +56,7 @@ func (e *entity) SetAuthorizationFunc(fn AuthorizationFunc) {
 	e.authorize = fn
 }
 
-func (e *entity) AuthorizeAction(act action, resource *resource, rolesNames []string) error {
+func (e *Entity) AuthorizeAction(act Action, resource *Resource, rolesNames []string) error {
 	requiredPermissions := e.actions[act]
 
 	if requiredPermissions == nil {

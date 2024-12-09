@@ -1,7 +1,7 @@
 package rbac
 
-type action string
+type Action string
 
-func (a action) String() string {
+func (a Action) String() string {
 	return string(a)
 }
