@@ -10,18 +10,15 @@ import (
 	"os"
 )
 
-type host struct {
+type Host struct {
 	// Role wich will have all new users, must correspond with one of the default roles' name. (optional)
 	OriginRoleName string    `json:"origing-role,omitempty"`
 	DefaultRoles   []*Role   `json:"default-roles"`
 	Schemas        []*Schema `json:"schemas"`
 }
 
-// Only one instance of host must exist at a time.
-var Host *host
-
-func GetSchema(ID string) (*Schema, *Error) {
-	if Host == nil {
+func (host *Host) GetSchema(ID string) (*Schema, *Error) {
+	if host == nil {
 		return nil, NewError("RBAC schema is not defined")
 	}
 
@@ -29,7 +26,7 @@ func GetSchema(ID string) (*Schema, *Error) {
 		return nil, NewError("Missing schema id")
 	}
 
-	for _, schema := range Host.Schemas {
+	for _, schema := range host.Schemas {
 		if schema.ID == ID {
 			return schema, nil
 		}
@@ -42,17 +39,17 @@ func GetSchema(ID string) (*Schema, *Error) {
 // parses it and sets the Schema variable to the parsed configuration.
 // After loading, it checks the configuration for errors and returns an error if any were found.
 // Also merges schema specific roles with permissions with the default roles' permissions.
-func LoadHost(path string) error {
+func LoadHost(path string) (*Host, error) {
 	log.Println("[ RBAC ] Loading configuration...")
 
 	file, err := os.Open(path)
 
 	if err != nil {
 		if os.IsNotExist(err) {
-			return errors.New("RBAC host configuration file wasn't found")
+			return nil, errors.New("RBAC host configuration file wasn't found")
 		}
 
-		return err
+		return nil, err
 	}
 
 	// panic calls defered functions, so it will be called in any case
@@ -66,35 +63,35 @@ func LoadHost(path string) error {
 	buf, err := io.ReadAll(file)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	Host = &host{}
+	host := &Host{}
 
-	if err := json.NewDecoder(bytes.NewReader(buf)).Decode(Host); err != nil {
-		return errors.New("[ RBAC ] Failed to parse RBAC host configuration file: " + err.Error())
+	if err := json.NewDecoder(bytes.NewReader(buf)).Decode(host); err != nil {
+		return nil, errors.New("[ RBAC ] Failed to parse RBAC host configuration file: " + err.Error())
 	}
 
 	log.Println("[ RBAC ] Loading host configuration: OK")
 
 	log.Println("[ RBAC ] Checking host configuration...")
 
-	if err = Host.Validate(); err != nil {
-		return err
+	if err = host.Validate(); err != nil {
+		return nil, err
 	}
 
 	log.Println("[ RBAC ] Checking host configuration: OK")
 
 	log.Println("[ RBAC ] Merging schemas permissions...")
 
-	Host.MergePermissions()
+	host.MergePermissions()
 
 	log.Println("[ RBAC ] Merging schemas permissions: OK")
 
-	return nil
+	return host, nil
 }
 
-func (host *host) Validate() error {
+func (host *Host) Validate() error {
 	if len(host.Schemas) == 0 {
 		return errors.New("at least one schema must be defined")
 	}
@@ -117,7 +114,7 @@ func (host *host) Validate() error {
 
 // Merges permissions from schema specific roles with default roles.
 // If schema has a role with the same name as default role, schema role overwrites default role.
-func (host *host) MergePermissions() {
+func (host *Host) MergePermissions() {
 	for _, schema := range host.Schemas {
 		roles := []*Role{}
 
