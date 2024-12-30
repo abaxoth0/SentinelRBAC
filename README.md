@@ -26,7 +26,7 @@ There are 8 permissions:
 
 -   Delete
 
--   Delete
+-   Self Delete
 
 I assume that there are no need to describe what each one of them permit to do.
 
@@ -94,12 +94,12 @@ func main() {
     // It won't affect original roles, cuz each resource uses a copy of roles' permissions.
 	cache.Permissions["admin"].Delete = true
 
-	e := user.AuthorizeAction(act, cache, rbac.GetRolesNames(userRoles1))
+	e := rbac.Authorize(act, cache, rbac.GetRolesNames(userRoles1))
 
     // Error: <nil>
 	fmt.Println(e)
 
-	e = user.AuthorizeAction(act, cache, rbac.GetRolesNames(userRoles2))
+	e = rbac.Authorize(act, cache, rbac.GetRolesNames(userRoles2))
 
     // Error: Insufficient permissions to perform this action
 	fmt.Println(e)
@@ -113,9 +113,9 @@ func main() {
 
 ## Host
 
-Host originaly desined for applications with microservice architectures.
+`Host` originaly desined for applications with microservice architectures.
 
-Host helps to define roles and schemas for each service in your app.
+`Host` helps to define roles and schemas for each service in your app.
 Roles can be specified by default or schemas can have their own roles.
 
 > [!NOTE]
@@ -123,9 +123,9 @@ Roles can be specified by default or schemas can have their own roles.
 
 You can also select one of default roles as origin role, all new users must have this role in your application.
 
-By default `Host` is `nil` and can be initialized by one of the following methods:
+`Host` can be initialized by one of the following methods:
 
--   **LoadHost(path string)** - Open and reads configuration file (JSON) at the specified path, then this method parse it and assign to `Host` variable. This method also validates `Host` permissions and merges default roles with service specific roles, so consider this method as recommended way of `Host` initialization.
+-   **LoadHost(path string)** - Open and reads configuration file (JSON) at the specified path and after parsing returns it. This method also validates permissions and merges default roles with service specific roles, so consider this method as recommended way of `Host` initialization.
 
 ### HOST EXAMPLE
 
