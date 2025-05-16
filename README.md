@@ -10,6 +10,8 @@ There are no built-in roles, all roles must be defined by developer.
 
 ### PERMISSIONS
 
+Permissions are represented via bitmask, so they are very fast to work with.
+
 There are 8 permissions:
 
 -   Create
@@ -38,7 +40,7 @@ In most cases you will have only 1 entity in your application - user.
 
 ### Action
 
-Action is just a custom typed string wich represents name of this action. Each action is bound to specific entity.
+Action is just a type definition based on string. It represents name of this action. Each action is bound to specific entity.
 
 Action can be create via `.NewAction(<name>, <required permissions>)` method of some entity.
 
@@ -57,57 +59,53 @@ Example:
 package main
 
 import (
-	"fmt"
+    "fmt"
 
-	rbac "github.com/StepanAnanin/SentinelRBAC"
+    rbac "github.com/StepanAnanin/SentinelRBAC"
 )
 
 func main() {
-	roles := []*rbac.Role{
-		rbac.NewRole("admin", &rbac.Permissions{
-			Delete: false,
-		}),
-		rbac.NewRole("moderator", &rbac.Permissions{
-			Delete: false,
-		}),
-		rbac.NewRole("user", &rbac.Permissions{
-			Delete: false,
-		}),
-	}
+    roles := []*rbac.Role{
+        //    10101
+        rbac.NewRole("admin", rbac.CreatePermission|rbac.ReadPermission|rbac.UpdatePermission),
+        //   100101
+        rbac.NewRole("moderator", rbac.CreatePermission|rbac.ReadPermission|rbac.SelfUpdatePermission),
+        // 10101000
+        rbac.NewRole("user", rbac.SelfReadPermission|rbac.SelfUpdatePermission|rbac.SelfDeletePermission),
+    }
 
-    // admin
-	userRoles1 := roles[:1]
-    // moderator, user
-	userRoles2 := roles[1:]
+    userRoles1 := roles[:1]
+    userRoles2 := roles[1:]
 
-	user := rbac.NewEntity("user")
+    user := rbac.NewEntity("user")
 
     // This is required permissions for this action
-	act := user.NewAction("delete", &rbac.Permissions{
-		Delete: true,
-	})
+    act, err := user.NewAction("delete", rbac.DeletePermission)
+    if err != nil {
+        panic(err)
+    }
 
-    // Resources contains roles (and roles contains allowed permissions)
-	cache := rbac.NewResource("cache", roles)
+    // Resources contains roles (and roles contains permissions)
+    cache := rbac.NewResource("cache", roles)
 
     // Inside of resource you can change role permissions as it requires
     // It won't affect original roles, cuz each resource uses a copy of roles' permissions.
-	cache.Permissions["admin"].Delete = true
+    cache.RolesPermissions["admin"] = rbac.DeletePermission
 
-	e := rbac.Authorize(act, cache, rbac.GetRolesNames(userRoles1))
+    e := rbac.Authorize(act, cache, rbac.GetRolesNames(userRoles1))
 
     // Error: <nil>
-	fmt.Println(e)
+    fmt.Println(e)
 
-	e = rbac.Authorize(act, cache, rbac.GetRolesNames(userRoles2))
+    e = rbac.Authorize(act, cache, rbac.GetRolesNames(userRoles2))
 
     // Error: Insufficient permissions to perform this action
-	fmt.Println(e)
+    fmt.Println(e)
 
     // (0 index is "admin" role)
-    // false, even if previously it was set to true,
+    // 10101, even if previously it was set to 1000000 (rbac.DeletePermission),
     // this change doesn't affect original or other resource's roles permissions,
-	fmt.Println(roles[0].Permissions.Delete)
+    fmt.Println(strconv.FormatInt(int64(roles[0].Permissions), 2))
 }
 ```
 
@@ -121,7 +119,7 @@ Roles can be specified by default or schemas can have their own roles.
 > [!NOTE]
 > Service specific roles will overwrite default roles!
 
-You can also select one of default roles as origin role, all new users must have this role in your application.
+You can also select several roles as default roles, all new users must have this roles.
 
 `Host` can be initialized by one of the following methods:
 
@@ -131,8 +129,10 @@ You can also select one of default roles as origin role, all new users must have
 
 ```json
 {
-    "origing-role": "unconfirmed_user",
     "default-roles": [
+        "unconfirmed_user"
+    ],
+    "roles": [
         {
             "name": "unconfirmed_user",
             "permissions": {
