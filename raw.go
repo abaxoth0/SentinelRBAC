@@ -25,28 +25,28 @@ func (r rawPermissions) ToBitmask() Permissions {
     var permissions Permissions
 
     if r.Create {
-        permissions = permissions|CreatePermission
+        permissions |= CreatePermission
     }
     if r.SelfCreate {
-        permissions = permissions|SelfCreatePermission
+        permissions |= SelfCreatePermission
     }
     if r.Read {
-        permissions = permissions|ReadPermission
+        permissions |= ReadPermission
     }
     if r.SelfRead {
-        permissions = permissions|SelfReadPermission
+        permissions |= SelfReadPermission
     }
     if r.Update {
-        permissions = permissions|UpdatePermission
+        permissions |= UpdatePermission
     }
     if r.SelfUpdate {
-        permissions = permissions|SelfUpdatePermission
+        permissions |= SelfUpdatePermission
     }
     if r.Delete {
-        permissions = permissions|DeletePermission
+        permissions |= DeletePermission
     }
     if r.SelfDelete {
-        permissions = permissions|SelfDeletePermission
+        permissions |= SelfDeletePermission
     }
 
     return permissions

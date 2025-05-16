@@ -14,11 +14,11 @@ var auth AuthzFunc = AuthorizeCRUD
 // AuthorizationFunc can be overridden via this function, to implement custom authorization logic.
 // By default it uses the AuthorizeCRUD function.
 func SetAuthzFunc(fn AuthzFunc) {
-	if fn == nil {
-		panic("authorization function can't be nil")
-	}
+    if fn == nil {
+        panic("authorization function can't be nil")
+    }
 
-	auth = fn
+    auth = fn
 }
 
 // Checks if the "permitted" permissions are sufficient to satisfy the "required" CRUD permissions.
@@ -58,7 +58,7 @@ func AuthorizeCRUD(required Permissions, permitted Permissions) *Error {
         return InsufficientPermissions
     }
 
-	return nil
+    return nil
 }
 
 // Authorize checks if the user has sufficient permissions to perform an action on a resource.
@@ -67,31 +67,23 @@ func AuthorizeCRUD(required Permissions, permitted Permissions) *Error {
 // It returns an error if any of the required permissions for the action are not covered by the user's roles.
 // If the user has sufficient permissions, it returns nil.
 func Authorize(act Action, resource *Resource, rolesNames []string) error {
-	requiredPermissions := actions[act]
+    requiredPermissions := actions[act]
 
-	if requiredPermissions == 0 {
-		return errors.New("action \"" + act.String() + "\" wasn't found")
-	}
+    if requiredPermissions == 0 {
+        return errors.New("action \"" + act.String() + "\" wasn't found")
+    }
 
-	permitted := false
+    mergredPermissions := 0
 
-	for _, roleName := range rolesNames {
-		permissions := resource.RolesPermissions[roleName]
+    for _, roleName := range rolesNames {
+        mergredPermissions |= resource.RolesPermissions[roleName]
+    }
 
-		if permissions == 0 {
-			return NewError("permissions of resource \"" + resource.Name + "\" for \"" + roleName + "\" role are not defined")
-		}
+    if err := auth(requiredPermissions, mergredPermissions); err == nil {
+        return nil
+    }
 
-		if err := auth(requiredPermissions, permissions); err == nil {
-			permitted = true
-			break
-		}
-	}
+    return InsufficientPermissions
 
-	if !permitted {
-		return InsufficientPermissions
-	}
-
-	return nil
 }
 
