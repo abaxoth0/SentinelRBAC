@@ -1,9 +1,9 @@
 package rbac
 
 type Schema struct {
-	ID    string  `json:"id"`
-	Name  string  `json:"name"`
-	Roles []*Role `json:"roles,omitempty"`
+	ID    string
+	Name  string
+	Roles []*Role
 }
 
 func NewSchema(id string, name string, roles []*Role) *Schema {
@@ -23,3 +23,4 @@ func (schema *Schema) ParseRole(roleName string) (*Role, *Error) {
 
 	return nil, NewError("Role \"" + roleName + "\" wasn't found in schema \"" + schema.Name + "\"")
 }
+

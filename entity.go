@@ -1,5 +1,7 @@
 package rbac
 
+import "errors"
+
 type Entity struct {
 	Name string
 }
@@ -18,16 +20,18 @@ func (e *Entity) prefix(act string) Action {
 	return Action(e.Name + "." + act)
 }
 
-func (e *Entity) NewAction(name string, requiredPermissions *Permissions) Action {
+// Creates action with given name for specified entity.
+// Will return zero value of Action and error if action with this name already exists on this entity.
+func (e *Entity) NewAction(name string, requiredPermissions Permissions) (Action, error) {
 	act := e.prefix(name)
 
 	if e.HasAction(act) {
-		panic("action \"" + name + "\" already exists in \"" + e.Name + "\" entity")
+		return "", errors.New("action \"" + name + "\" already exists in \"" + e.Name + "\" entity")
 	}
 
 	actions[act] = requiredPermissions
 
-	return act
+	return act, nil
 }
 
 func (e *Entity) RemoveAction(act Action) {
@@ -39,3 +43,4 @@ func (e *Entity) HasAction(act Action) bool {
 
 	return ok
 }
+

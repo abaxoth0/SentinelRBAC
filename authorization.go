@@ -2,9 +2,9 @@ package rbac
 
 import "errors"
 
-type AuthorizationFunc func(*Permissions, *Permissions) *Error
+type AuthzFunc func(Permissions, Permissions) *Error
 
-var auth AuthorizationFunc = AuthorizeCRUD
+var auth AuthzFunc = AuthorizeCRUD
 
 // AuthorizationFunc checks user's permissions.
 //
@@ -13,7 +13,7 @@ var auth AuthorizationFunc = AuthorizeCRUD
 //
 // AuthorizationFunc can be overridden via this function, to implement custom authorization logic.
 // By default it uses the AuthorizeCRUD function.
-func SetAuthorizationFunc(fn AuthorizationFunc) {
+func SetAuthzFunc(fn AuthzFunc) {
 	if fn == nil {
 		panic("authorization function can't be nil")
 	}
@@ -24,38 +24,39 @@ func SetAuthorizationFunc(fn AuthorizationFunc) {
 // Checks if the "permitted" permissions are sufficient to satisfy the "required" CRUD permissions.
 //
 // It returns an "InsufficientPermissions" error if any of the "required" permissions are not covered by the "permitted" permissions.
-func AuthorizeCRUD(required *Permissions, permitted *Permissions) *Error {
-	if required.Create && (!permitted.Create) {
-		return InsufficientPermissions
-	}
-
-	if required.SelfCreate && (!permitted.Create || !permitted.SelfCreate) {
-		return InsufficientPermissions
-	}
-
-	if required.Create && (!permitted.Create) {
-		return InsufficientPermissions
-	}
-
-	if required.SelfRead && (!permitted.Read || !permitted.SelfRead) {
-		return InsufficientPermissions
-	}
-
-	if required.Update && (!permitted.Update) {
-		return InsufficientPermissions
-	}
-
-	if required.SelfUpdate && (!permitted.Update || !permitted.SelfUpdate) {
-		return InsufficientPermissions
-	}
-
-	if required.Delete && (!permitted.Delete) {
-		return InsufficientPermissions
-	}
-
-	if required.SelfDelete && (!permitted.Delete || !permitted.SelfDelete) {
-		return InsufficientPermissions
-	}
+func AuthorizeCRUD(required Permissions, permitted Permissions) *Error {
+    // To verify that 'permitted' satisfies 'required' need to check
+    // if all 1 bits in 'required' are set in 'permitted',
+    // For that need to perform a bitwise AND between 'required' and 'permitted',
+    // then verify if the result equals 'required'.
+    // If (required & permitted) == required, all 1s in required are present in permitted.
+    // Proof:
+    // r - required, p - permitted, & - bitwise AND (conjunction), c - conjunction result.
+    //
+    // example #1
+    // r:    01101
+    //           &
+    // p: 11101001
+    // -----------
+    // c:     1001
+    //          ==
+    // r:    01101
+    // -----------
+    //       false (InsufficientPermissions error)
+    //
+    // example #2
+    // r:    10011
+    //           &
+    // p:   111111
+    // -----------
+    // c:    10011
+    //          ==
+    // r:    10011
+    // -----------
+    //        true (No error)
+    if required&permitted != required {
+        return InsufficientPermissions
+    }
 
 	return nil
 }
@@ -68,17 +69,17 @@ func AuthorizeCRUD(required *Permissions, permitted *Permissions) *Error {
 func Authorize(act Action, resource *Resource, rolesNames []string) error {
 	requiredPermissions := actions[act]
 
-	if requiredPermissions == nil {
+	if requiredPermissions == 0 {
 		return errors.New("action \"" + act.String() + "\" wasn't found")
 	}
 
 	permitted := false
 
 	for _, roleName := range rolesNames {
-		permissions := resource.Permissions[roleName]
+		permissions := resource.RolesPermissions[roleName]
 
-		if permissions == nil {
-			return NewError("permissions of resource \"" + resource.Name + "\" for \"" + roleName + "\" role is not defined")
+		if permissions == 0 {
+			return NewError("permissions of resource \"" + resource.Name + "\" for \"" + roleName + "\" role are not defined")
 		}
 
 		if err := auth(requiredPermissions, permissions); err == nil {
@@ -93,3 +94,4 @@ func Authorize(act Action, resource *Resource, rolesNames []string) error {
 
 	return nil
 }
+

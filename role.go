@@ -1,11 +1,11 @@
 package rbac
 
 type Role struct {
-	Name        string       `json:"name"`
-	Permissions *Permissions `json:"permissions"`
+	Name        string
+	Permissions Permissions
 }
 
-func NewRole(name string, permissions *Permissions) *Role {
+func NewRole(name string, permissions Permissions) *Role {
 	return &Role{
 		Name:        name,
 		Permissions: permissions,
@@ -21,3 +21,4 @@ func GetRolesNames(roles []*Role) []string {
 
 	return names
 }
+
