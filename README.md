@@ -123,7 +123,7 @@ You can also select several roles as default roles, all new users must have this
 
 `Host` can be initialized by one of the following methods:
 
--   **LoadHost(path string)** - Open and reads configuration file (JSON) at the specified path and after parsing returns it. This method also validates permissions and merges default roles with service specific roles, so consider this method as recommended way of `Host` initialization.
+-   **LoadHost(path string) (Host, error)** - Open and reads configuration file (JSON) at the specified path and after parsing returns it. This method also validates permissions and merges permissions of the global roles with permissions of the service specific (Schema) roles. This method is recommended way of `Host` initialization. (And currently the only one)
 
 ### HOST EXAMPLE
 

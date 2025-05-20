@@ -66,9 +66,10 @@ func (h *Host) Validate() error {
 }
 
 // Merges permissions from schema specific roles with global roles.
-// If schema has a role with the same name as one of the global roles,
-// schema specific role will overwrite this role.
-func (h *Host) MergePermissions() {
+// If any schema have a role with the same name as one of the global roles, then for each that role
+// permissions of the schemas specific roles will overwrite permissions of the global roles.
+// Also adds in schemas all global roles that wasn't explicitly specified for them.
+func (h *Host) MergeRoles() {
     schemas := make([]Schema, len(h.Schemas))
 
 	for i, oldSchema := range h.Schemas {
@@ -102,7 +103,7 @@ func (h *Host) MergePermissions() {
 
 // Reads the RBAC configuration file from the given path.
 // After loading and normalizing, it validates the configuration and returns an error if any of them were detected.
-// Also merges schema specific roles with the global roles.
+// Also merges permissions of the schema specific roles with permissions of the global roles.
 func LoadHost(path string) (Host, error) {
     var zero Host
 
@@ -146,11 +147,11 @@ func LoadHost(path string) (Host, error) {
 	}
 
 	debugLog("[ RBAC ] Validating host configuration: OK")
-	debugLog("[ RBAC ] Merging schemas permissions...")
+	debugLog("[ RBAC ] Merging permissions of global and schemas roles...")
 
-	host.MergePermissions()
+	host.MergeRoles()
 
-	debugLog("[ RBAC ] Merging schemas permissions: OK")
+    debugLog("[ RBAC ] Merging permissions of global and schemas roles: OK")
 
 	return *host, nil
 }
