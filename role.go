@@ -5,18 +5,18 @@ type Role struct {
 	Permissions Permissions
 }
 
-func NewRole(name string, permissions Permissions) *Role {
-	return &Role{
+func NewRole(name string, permissions Permissions) Role {
+	return Role{
 		Name:        name,
 		Permissions: permissions,
 	}
 }
 
-func GetRolesNames(roles []*Role) []string {
-	names := []string{}
+func GetRolesNames(roles []Role) []string {
+	names := make([]string, len(roles))
 
-	for _, role := range roles {
-		names = append(names, role.Name)
+	for i, role := range roles {
+		names[i] = role.Name
 	}
 
 	return names

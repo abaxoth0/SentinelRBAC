@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"slices"
 )
 
 // Host originaly desined for applications with microservice architectures.
@@ -17,10 +16,10 @@ import (
 type Host struct {
 	// (Optional)
     //
-    // Roles wich will have all new users, each default role must correspond with one of existing roles name.
-    DefaultRolesNames []string
-    Roles             []*Role
-    Schemas           []*Schema
+    // Roles wich will have all new users, each default role must correspond with one of existing global roles.
+    DefaultRoles []Role
+    Roles        []Role
+    Schemas      []Schema
 }
 
 func (h *Host) GetSchema(ID string) (*Schema, *Error) {
@@ -34,7 +33,7 @@ func (h *Host) GetSchema(ID string) (*Schema, *Error) {
 
     for _, schema := range h.Schemas {
         if schema.ID == ID {
-            return schema, nil
+            return &schema, nil
         }
     }
 
@@ -46,46 +45,64 @@ func (h *Host) Validate() error {
 		return errors.New("At least one schema must be defined")
 	}
 
-	for _, role := range h.Roles {
-        if slices.Contains(h.DefaultRolesNames, role.Name) {
-            return nil
-        }
-	}
+    rolesAmount := len(h.Roles)
 
-    return fmt.Errorf(
-        "Invalid default role \"%s\", it must be one of the roles names",
-        h.DefaultRolesNames,
-    )
+    for _, defaultRole := range h.DefaultRoles {
+        for i, role := range h.Roles {
+            if defaultRole.Name == role.Name {
+                break
+            }
+
+            if i + 1 == rolesAmount {
+                return fmt.Errorf(
+                    "Invalid default role \"%s\", it must be one of the roles names",
+                    defaultRole.Name,
+                )
+            }
+        }
+    }
+
+    return nil
 }
 
-// Merges permissions from schema specific roles with default roles.
-// If schema has a role with the same name as default role, schema role overwrites default role.
+// Merges permissions from schema specific roles with global roles.
+// If schema has a role with the same name as one of the global roles,
+// schema specific role will overwrite this role.
 func (h *Host) MergePermissions() {
-	for _, schema := range h.Schemas {
-		roles := []*Role{}
+    schemas := make([]Schema, len(h.Schemas))
+
+	for i, oldSchema := range h.Schemas {
+        schema := oldSchema
+
+        if oldSchema.Roles == nil || len(oldSchema.Roles) == 0 {
+            schema.Roles = h.Roles
+            schemas[i] = schema
+            continue
+        }
+
+        roles := []Role{}
 
 		for _, schemaRole := range schema.Roles {
-			for _, defaultRole := range h.Roles {
-				if schemaRole.Name == defaultRole.Name {
+			for _, role := range h.Roles {
+				if schemaRole.Name == role.Name {
 					roles = append(roles, schemaRole)
 				} else {
-					roles = append(roles, defaultRole)
+					roles = append(roles, role)
 				}
 			}
 		}
 
-		if schema.Roles == nil {
-			roles = h.Roles
-		}
-
 		schema.Roles = roles
+
+        schemas[i] = schema
 	}
+
+    h.Schemas = schemas
 }
 
-// Reads the RBAC configuration file from the given path,
-// parses it and sets the Schema variable to the parsed configuration.
-// After loading, it checks the configuration for errors and returns an error if any were found.
-// Also merges schema specific roles with permissions with the default roles' permissions.
+// Reads the RBAC configuration file from the given path.
+// After loading and normalizing, it validates the configuration and returns an error if any of them were detected.
+// Also merges schema specific roles with the global roles.
 func LoadHost(path string) (Host, error) {
     var zero Host
 
@@ -135,6 +152,6 @@ func LoadHost(path string) (Host, error) {
 
 	debugLog("[ RBAC ] Merging schemas permissions: OK")
 
-	return host, nil
+	return *host, nil
 }
 

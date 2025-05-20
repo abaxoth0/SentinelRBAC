@@ -1,5 +1,7 @@
 package rbac
 
+import "slices"
+
 // "raw" structs are design to be used by host to parse configuration file.
 // They are more user-friendly, but also more "heavy".
 //
@@ -70,17 +72,19 @@ type rawHost struct {
 }
 
 // Creates new Host based on self.
-func (h *rawHost) Normalize() Host {
-    var host Host
+func (h *rawHost) Normalize() *Host {
+    var host = new(Host)
 
-    host.DefaultRolesNames = h.DefaultRolesNames
-    host.Schemas = make([]*Schema, len(h.Schemas))
+    // host.DefaultRoles = h.DefaultRolesNames
+    host.DefaultRoles = []Role{}
+
+    host.Schemas = make([]Schema, len(h.Schemas))
 
     for i, rawSchema := range h.Schemas {
         host.Schemas[i] = NewSchema(
             rawSchema.ID,
             rawSchema.Name,
-            make([]*Role, len(rawSchema.Roles)),
+            make([]Role, len(rawSchema.Roles)),
         )
 
         for j, rawRole := range rawSchema.Roles {
@@ -91,13 +95,17 @@ func (h *rawHost) Normalize() Host {
         }
     }
 
-    host.Roles = make([]*Role, len(h.Roles))
+    host.Roles = make([]Role, len(h.Roles))
 
     for i, rawRole := range h.Roles {
         host.Roles[i] = NewRole(
             rawRole.Name,
             rawRole.Permissions.ToBitmask(),
         )
+
+        if slices.Contains(h.DefaultRolesNames, rawRole.Name) {
+            host.DefaultRoles = append(host.DefaultRoles, host.Roles[i])
+        }
     }
 
     return host

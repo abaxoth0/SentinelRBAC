@@ -1,15 +1,13 @@
 package rbac
 
-import "errors"
-
 type AuthzFunc func(Permissions, Permissions) *Error
 
-var auth AuthzFunc = AuthorizeCRUD
+var authorize AuthzFunc = AuthorizeCRUD
 
 // AuthorizationFunc checks user's permissions.
 //
 // This function is incapsulated in rbac package, so it can't be called directly,
-// instead use "Authorize" function.
+// instead use "Authorize" method of any existing resource.
 //
 // AuthorizationFunc can be overridden via this function, to implement custom authorization logic.
 // By default it uses the AuthorizeCRUD function.
@@ -18,7 +16,7 @@ func SetAuthzFunc(fn AuthzFunc) {
         panic("authorization function can't be nil")
     }
 
-    auth = fn
+    authorize = fn
 }
 
 // Checks if the "permitted" permissions are sufficient to satisfy the "required" CRUD permissions.
@@ -59,31 +57,5 @@ func AuthorizeCRUD(required Permissions, permitted Permissions) *Error {
     }
 
     return nil
-}
-
-// Authorize checks if the user has sufficient permissions to perform an action on a resource.
-//
-// It takes an Action, a Resource, and a list of user's roles.
-// It returns an error if any of the required permissions for the action are not covered by the user's roles.
-// If the user has sufficient permissions, it returns nil.
-func Authorize(act Action, resource *Resource, rolesNames []string) error {
-    requiredPermissions := actions[act]
-
-    if requiredPermissions == 0 {
-        return errors.New("action \"" + act.String() + "\" wasn't found")
-    }
-
-    mergredPermissions := 0
-
-    for _, roleName := range rolesNames {
-        mergredPermissions |= resource.RolesPermissions[roleName]
-    }
-
-    if err := auth(requiredPermissions, mergredPermissions); err == nil {
-        return nil
-    }
-
-    return InsufficientPermissions
-
 }
 
