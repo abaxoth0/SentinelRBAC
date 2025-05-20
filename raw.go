@@ -1,8 +1,10 @@
 package rbac
 
-import "slices"
+import (
+	"slices"
+)
 
-// "raw" structs are design to be used by host to parse configuration file.
+// "raw" structs are design to be used by host and config to parse configuration file.
 // They are more user-friendly, but also more "heavy".
 //
 // So for example - rawPermissions is just a struct which consists of flags,
@@ -65,18 +67,61 @@ type rawSchema struct {
     Roles []*rawRole `json:"roles,omitempty"`
 }
 
-type rawHost struct {
+type rawConfig struct {
 	DefaultRolesNames []string     `json:"default-roles,omitempty"`
+	Roles             []*rawRole   `json:"roles"`
+}
+
+func normalizeRoles(rawRoles []*rawRole) []Role {
+    roles := make([]Role, len(rawRoles))
+
+    for i, rawRole := range rawRoles {
+        roles[i] = NewRole(
+            rawRole.Name,
+            rawRole.Permissions.ToBitmask(),
+        )
+    }
+
+    return roles
+}
+
+func normalizeDefaultRoles(roles []Role, defaultRolesNames []string) []Role {
+    defaultRoles := []Role{}
+
+    for i, role := range roles {
+        if slices.Contains(defaultRolesNames, role.Name) {
+            defaultRoles = append(defaultRoles, roles[i])
+        }
+    }
+
+    return defaultRoles
+}
+
+// Creates new Config based on self.
+func (c *rawConfig) Normalize() *Config {
+    debugLog("[ RBAC ] Normalizing configuration...")
+
+    var config = new(Config)
+
+    config.Roles = normalizeRoles(c.Roles)
+    config.DefaultRoles = normalizeDefaultRoles(config.Roles, c.DefaultRolesNames)
+
+    debugLog("[ RBAC ] Normalizing configuration: OK")
+
+    return config
+}
+
+type rawHost struct {
+    DefaultRolesNames []string     `json:"default-roles,omitempty"`
 	Roles             []*rawRole   `json:"roles"`
 	Schemas           []*rawSchema `json:"schemas"`
 }
 
 // Creates new Host based on self.
 func (h *rawHost) Normalize() *Host {
-    var host = new(Host)
+    debugLog("[ RBAC ] Normalizing host...")
 
-    // host.DefaultRoles = h.DefaultRolesNames
-    host.DefaultRoles = []Role{}
+    var host = new(Host)
 
     host.Schemas = make([]Schema, len(h.Schemas))
 
@@ -95,18 +140,10 @@ func (h *rawHost) Normalize() *Host {
         }
     }
 
-    host.Roles = make([]Role, len(h.Roles))
+    host.Roles = normalizeRoles(h.Roles)
+    host.DefaultRoles = normalizeDefaultRoles(host.Roles, h.DefaultRolesNames)
 
-    for i, rawRole := range h.Roles {
-        host.Roles[i] = NewRole(
-            rawRole.Name,
-            rawRole.Permissions.ToBitmask(),
-        )
-
-        if slices.Contains(h.DefaultRolesNames, rawRole.Name) {
-            host.DefaultRoles = append(host.DefaultRoles, host.Roles[i])
-        }
-    }
+    debugLog("[ RBAC ] Normalizing host: OK")
 
     return host
 }

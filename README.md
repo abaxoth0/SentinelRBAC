@@ -109,56 +109,22 @@ func main() {
 }
 ```
 
-## Host
+## Config
 
-`Host` originaly desined for applications with microservice architectures.
-
-`Host` helps to define roles and schemas for each service in your app.
-Roles can be specified by default or schemas can have their own roles.
-
-> [!NOTE]
-> Service specific roles will overwrite default roles!
+`Config` designed to help you organize roles in convenient human-readble form.
 
 You can also select several roles as default roles, all new users must have this roles.
 
-`Host` can be initialized by one of the following methods:
+`Config` should be defined in it's own file in JSON format. It can be loaded via **LoadConfig(path string) (Config, error)**.
 
--   **LoadHost(path string) (Host, error)** - Open and reads configuration file (JSON) at the specified path and after parsing returns it. This method also validates permissions and merges permissions of the global roles with permissions of the service specific (Schema) roles. This method is recommended way of `Host` initialization. (And currently the only one)
-
-### HOST EXAMPLE
+### Config example
 
 ```json
 {
     "default-roles": [
-        "unconfirmed_user"
+        "user"
     ],
     "roles": [
-        {
-            "name": "unconfirmed_user",
-            "permissions": {
-                "read": false,
-                "self-read": false,
-                "create": false,
-                "self-create": false,
-                "update": false,
-                "self-update": false,
-                "delete": false,
-                "self-delete": true
-            }
-        },
-        {
-            "name": "restricted_user",
-            "permissions": {
-                "read": false,
-                "self-read": true,
-                "create": false,
-                "self-create": false,
-                "update": false,
-                "self-update": false,
-                "delete": false,
-                "self-delete": true
-            }
-        },
         {
             "name": "user",
             "permissions": {
@@ -173,16 +139,70 @@ You can also select several roles as default roles, all new users must have this
             }
         },
         {
-            "name": "support",
+            "name": "moderator",
             "permissions": {
                 "read": true,
-                "self-read": false,
+                "self-read": true,
+                "create": true,
+                "self-create": true,
+                "update": true,
+                "self-update": true,
+                "delete": true,
+                "self-delete": true
+            }
+        },
+        {
+            "name": "admin",
+            "permissions": {
+                "read": true,
+                "self-read": true,
+                "create": true,
+                "self-create": true,
+                "update": true,
+                "self-update": true,
+                "delete": true,
+                "self-delete": true
+            }
+        }
+    ]
+}
+```
+
+## Host
+
+`Host` originaly desined for applications with microservice architectures.
+
+`Host` helps to define roles and schemas for each service in your app.
+Roles can be specified by default or schemas can have their own roles.
+
+> [!NOTE]
+> Service specific roles will overwrite default roles!
+
+Like in `Config` you can specify default roles.
+
+`Host` can be initialized by one of the following methods:
+
+-   **LoadHost(path string) (Host, error)** - Open and reads configuration file (JSON) at the specified path and after parsing returns it. This method also validates permissions and merges permissions of the global roles with permissions of the service specific (Schema) roles. This method is recommended way of `Host` initialization. (And currently the only one)
+
+### Host example
+
+```json
+{
+    "default-roles": [
+        "user"
+    ],
+    "roles": [
+        {
+            "name": "user",
+            "permissions": {
+                "read": false,
+                "self-read": true,
                 "create": false,
                 "self-create": false,
                 "update": false,
                 "self-update": true,
                 "delete": false,
-                "self-delete": false
+                "self-delete": true
             }
         },
         {
@@ -218,7 +238,7 @@ You can also select several roles as default roles, all new users must have this
             "name": "post-service",
             "roles": [
                 {
-                    "name": "unconfirmed_user",
+                    "name": "user",
                     "permissions": {
                         "read": false,
                         "self-read": true,

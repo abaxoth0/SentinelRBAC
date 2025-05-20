@@ -5,6 +5,7 @@ import (
 	"sync/atomic"
 )
 
+// Package will work in debug mode if true
 var Debug atomic.Bool
 
 func debugLog(msg string) {

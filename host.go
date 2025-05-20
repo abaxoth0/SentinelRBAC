@@ -1,12 +1,7 @@
 package rbac
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
-	"fmt"
-	"io"
-	"os"
 )
 
 // Host originaly desined for applications with microservice architectures.
@@ -41,26 +36,17 @@ func (h *Host) GetSchema(ID string) (*Schema, *Error) {
 }
 
 func (h *Host) Validate() error {
+	debugLog("[ RBAC ] Validating host...")
+
 	if len(h.Schemas) == 0 {
 		return errors.New("At least one schema must be defined")
 	}
 
-    rolesAmount := len(h.Roles)
-
-    for _, defaultRole := range h.DefaultRoles {
-        for i, role := range h.Roles {
-            if defaultRole.Name == role.Name {
-                break
-            }
-
-            if i + 1 == rolesAmount {
-                return fmt.Errorf(
-                    "Invalid default role \"%s\", it must be one of the roles names",
-                    defaultRole.Name,
-                )
-            }
-        }
+    if err := validateDefaultRoles(h.Roles, h.DefaultRoles); err != nil {
+        return err
     }
+
+    debugLog("[ RBAC ] Validating host: OK")
 
     return nil
 }
@@ -70,6 +56,8 @@ func (h *Host) Validate() error {
 // permissions of the schemas specific roles will overwrite permissions of the global roles.
 // Also adds in schemas all global roles that wasn't explicitly specified for them.
 func (h *Host) MergeRoles() {
+	debugLog("[ RBAC ] Merging Host permissions of global and schemas roles...")
+
     schemas := make([]Schema, len(h.Schemas))
 
 	for i, oldSchema := range h.Schemas {
@@ -99,59 +87,28 @@ func (h *Host) MergeRoles() {
 	}
 
     h.Schemas = schemas
+
+    debugLog("[ RBAC ] Merging Host permissions of global and schemas roles: OK")
 }
 
-// Reads the RBAC configuration file from the given path.
-// After loading and normalizing, it validates the configuration and returns an error if any of them were detected.
+// Reads RBAC host configuration file from the given path.
+// After loading and normalizing, validates this Host and returns an error if any of them were detected.
 // Also merges permissions of the schema specific roles with permissions of the global roles.
 func LoadHost(path string) (Host, error) {
     var zero Host
 
-	debugLog("[ RBAC ] Loading configuration...")
-
-	file, err := os.Open(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return zero, errors.New("RBAC host configuration file wasn't found")
-		}
-
-		return zero, err
-	}
-	defer func() {
-		if err = file.Close(); err != nil {
-			debugLog(err.Error())
-			os.Exit(1)
-		}
-	}()
-
-	buf, err := io.ReadAll(file)
-	if err != nil {
-		return zero, err
-	}
-
-	raw := &rawHost{}
-	if err := json.NewDecoder(bytes.NewReader(buf)).Decode(raw); err != nil {
-		return zero, errors.New("Failed to parse RBAC host configuration file: " + err.Error())
-	}
-
-    debugLog("[ RBAC ] Loading host configuration: OK")
-    debugLog("[ RBAC ] Normalizing host configuration...")
+    raw, err := load[rawHost](path)
+    if err != nil {
+        return zero, err
+    }
 
     host := raw.Normalize()
-
-    debugLog("[ RBAC ] Normalizing host configuration: OK")
-	debugLog("[ RBAC ] Validating host configuration...")
 
 	if err = host.Validate(); err != nil {
 		return zero, err
 	}
 
-	debugLog("[ RBAC ] Validating host configuration: OK")
-	debugLog("[ RBAC ] Merging permissions of global and schemas roles...")
-
 	host.MergeRoles()
-
-    debugLog("[ RBAC ] Merging permissions of global and schemas roles: OK")
 
 	return *host, nil
 }
