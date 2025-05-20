@@ -1,7 +1,7 @@
 package rbac
 
-// bitmask
-type Permissions = int
+// Bitmask
+type Permissions = uint16
 
 const (
     CreatePermission Permissions = 1 << iota

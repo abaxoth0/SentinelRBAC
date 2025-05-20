@@ -30,7 +30,7 @@ func (r *Resource) Authorize(act Action, rolesNames []string) error {
         return errors.New("action \"" + act.String() + "\" wasn't found")
     }
 
-    mergredPermissions := 0
+    mergredPermissions := Permissions(0)
 
     for _, roleName := range rolesNames {
         mergredPermissions |= r.RolesPermissions[roleName]
