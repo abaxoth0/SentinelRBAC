@@ -65,7 +65,7 @@ import (
 )
 
 func main() {
-    roles := []*rbac.Role{
+    roles := []rbac.Role{
         //    10101
         rbac.NewRole("admin", rbac.CreatePermission|rbac.ReadPermission|rbac.UpdatePermission),
         //   100101
@@ -85,19 +85,19 @@ func main() {
         panic(err)
     }
 
-    // Resources contains roles (and roles contains permissions)
+    // Resources contains roles (and roles contains allowed permissions)
     cache := rbac.NewResource("cache", roles)
 
     // Inside of resource you can change role permissions as it requires
     // It won't affect original roles, cuz each resource uses a copy of roles' permissions.
     cache.RolesPermissions["admin"] = rbac.DeletePermission
 
-    e := rbac.Authorize(act, cache, rbac.GetRolesNames(userRoles1))
+    e := cache.Authorize(act, rbac.GetRolesNames(userRoles1))
 
     // Error: <nil>
     fmt.Println(e)
 
-    e = rbac.Authorize(act, cache, rbac.GetRolesNames(userRoles2))
+    e = cache.Authorize(act, rbac.GetRolesNames(userRoles2))
 
     // Error: Insufficient permissions to perform this action
     fmt.Println(e)
