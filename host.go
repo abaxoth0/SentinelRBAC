@@ -9,11 +9,8 @@ import (
 // Host helps to define roles and schemas for each service in your app.
 // You can also select several roles as default roles, all new users must have this roles.
 type Host struct {
-	// (Optional)
-    //
-    // Roles wich will have all new users, each default role must correspond with one of existing global roles.
     DefaultRoles []Role
-    Roles        []Role
+    GlobalRoles  []Role
     Schemas      []Schema
 }
 
@@ -42,7 +39,7 @@ func (h *Host) Validate() error {
 		return errors.New("At least one schema must be defined")
 	}
 
-    if err := validateDefaultRoles(h.Roles, h.DefaultRoles); err != nil {
+    if err := validateDefaultRoles(h.GlobalRoles, h.DefaultRoles); err != nil {
         return err
     }
 
@@ -64,7 +61,7 @@ func (h *Host) MergeRoles() {
         schema := oldSchema
 
         if oldSchema.Roles == nil || len(oldSchema.Roles) == 0 {
-            schema.Roles = h.Roles
+            schema.Roles = h.GlobalRoles
             schemas[i] = schema
             continue
         }
@@ -72,11 +69,11 @@ func (h *Host) MergeRoles() {
         roles := []Role{}
 
 		for _, schemaRole := range schema.Roles {
-			for _, role := range h.Roles {
-				if schemaRole.Name == role.Name {
+			for _, globalRole := range h.GlobalRoles {
+				if schemaRole.Name == globalRole.Name {
 					roles = append(roles, schemaRole)
 				} else {
-					roles = append(roles, role)
+					roles = append(roles, globalRole)
 				}
 			}
 		}

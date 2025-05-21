@@ -4,7 +4,7 @@ import (
 	"slices"
 )
 
-// "raw" structs are design to be used by host and config to parse configuration file.
+// "raw" structs are design to be used by host and schema to be able being initialized from files.
 // They are more user-friendly, but also more "heavy".
 //
 // So for example - rawPermissions is just a struct which consists of flags,
@@ -62,14 +62,10 @@ type rawRole struct {
 }
 
 type rawSchema struct {
-    ID    string     `json:"id"`
-    Name  string     `json:"name"`
-    Roles []*rawRole `json:"roles,omitempty"`
-}
-
-type rawConfig struct {
-	DefaultRolesNames []string     `json:"default-roles,omitempty"`
-	Roles             []*rawRole   `json:"roles"`
+    ID                string     `json:"id"`
+    Name              string     `json:"name"`
+    Roles             []*rawRole `json:"roles,omitempty"`
+    DefaultRolesNames []string   `json:"default-roles,omitempty"`
 }
 
 func normalizeRoles(rawRoles []*rawRole) []Role {
@@ -97,23 +93,25 @@ func normalizeDefaultRoles(roles []Role, defaultRolesNames []string) []Role {
     return defaultRoles
 }
 
-// Creates new Config based on self.
-func (c *rawConfig) Normalize() *Config {
-    debugLog("[ RBAC ] Normalizing configuration...")
+// Creates new Schema based on self.
+func (s *rawSchema) Normalize() *Schema {
+    debugLog("[ RBAC ] Normalizing schema...")
 
-    var config = new(Config)
+    var schema = new(Schema)
 
-    config.Roles = normalizeRoles(c.Roles)
-    config.DefaultRoles = normalizeDefaultRoles(config.Roles, c.DefaultRolesNames)
+    schema.ID = s.ID
+    schema.Name = s.Name
+    schema.Roles = normalizeRoles(s.Roles)
+    schema.DefaultRoles = normalizeDefaultRoles(schema.Roles, s.DefaultRolesNames)
 
-    debugLog("[ RBAC ] Normalizing configuration: OK")
+    debugLog("[ RBAC ] Normalizing schema: OK")
 
-    return config
+    return schema
 }
 
 type rawHost struct {
     DefaultRolesNames []string     `json:"default-roles,omitempty"`
-	Roles             []*rawRole   `json:"roles"`
+    GlobalRoles       []*rawRole   `json:"roles"`
 	Schemas           []*rawSchema `json:"schemas"`
 }
 
@@ -129,19 +127,16 @@ func (h *rawHost) Normalize() *Host {
         host.Schemas[i] = NewSchema(
             rawSchema.ID,
             rawSchema.Name,
-            make([]Role, len(rawSchema.Roles)),
+            normalizeRoles(rawSchema.Roles),
+            normalizeDefaultRoles(
+                host.Schemas[i].Roles,
+                rawSchema.DefaultRolesNames,
+            ),
         )
-
-        for j, rawRole := range rawSchema.Roles {
-            host.Schemas[i].Roles[j] = NewRole(
-                rawRole.Name,
-                rawRole.Permissions.ToBitmask(),
-            )
-        }
     }
 
-    host.Roles = normalizeRoles(h.Roles)
-    host.DefaultRoles = normalizeDefaultRoles(host.Roles, h.DefaultRolesNames)
+    host.GlobalRoles = normalizeRoles(h.GlobalRoles)
+    host.DefaultRoles = normalizeDefaultRoles(host.GlobalRoles, h.DefaultRolesNames)
 
     debugLog("[ RBAC ] Normalizing host: OK")
 
