@@ -43,21 +43,19 @@ func load[T any](path string) (*T, error) {
 }
 
 func validateDefaultRoles(roles []Role, defaultRoles []Role) error {
-    rolesAmount := len(roles)
-
+    outer:
     for _, defaultRole := range defaultRoles {
-        for i, role := range roles {
+        for _, role := range roles {
             if defaultRole.Name == role.Name {
-                break
+                continue outer;
             }
 
-            if i + 1 == rolesAmount {
-                return fmt.Errorf(
-                    "Invalid default role \"%s\", it must be one of the roles names",
-                    defaultRole.Name,
-                )
-            }
         }
+
+        return fmt.Errorf(
+            "Invalid role '%s'. This role doesn't exists in Schema roles",
+            defaultRole.Name,
+        )
     }
 
     return nil

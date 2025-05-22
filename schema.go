@@ -27,13 +27,13 @@ func (schema *Schema) ParseRole(roleName string) (Role, *Error) {
 }
 
 func (s *Schema) Validate() error {
-    debugLog("[ RBAC ] Validating schema...")
+    debugLog("[ RBAC ] Validating schema '"+s.Name+"' ("+s.ID+")...")
 
     if err := validateDefaultRoles(s.Roles, s.DefaultRoles); err != nil {
         return err
     }
 
-    debugLog("[ RBAC ] Validating schema: OK")
+    debugLog("[ RBAC ] Validating schema '"+s.Name+"' ("+s.ID+"): OK")
 
     return nil
 }
@@ -48,7 +48,10 @@ func LoadSchema(path string) (Schema, error) {
         return zero, err
     }
 
-    schema := raw.Normalize()
+    schema, err := raw.Normalize()
+    if err != nil {
+        return zero, err
+    }
 
 	if err = schema.Validate(); err != nil {
 		return zero, err

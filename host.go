@@ -2,6 +2,7 @@ package rbac
 
 import (
 	"errors"
+	"fmt"
 )
 
 // Host originaly desined for applications with microservice architectures.
@@ -39,6 +40,28 @@ func (h *Host) Validate() error {
 		return errors.New("At least one schema must be defined")
 	}
 
+    for _, schema := range h.Schemas {
+        if err := schema.Validate(); err != nil {
+            return err
+        }
+
+        outer:
+        for _, defaultRole := range schema.DefaultRoles {
+            for _, role := range schema.Roles {
+                if role.Name == defaultRole.Name {
+                    continue outer;
+                }
+            }
+
+            return fmt.Errorf(
+                "Invalid default role '%s' in schema '%s' (%s). It must be one of this schema's roles",
+                defaultRole.Name,
+                schema.Name,
+                schema.ID,
+            )
+        }
+    }
+
     if err := validateDefaultRoles(h.GlobalRoles, h.DefaultRoles); err != nil {
         return err
     }
@@ -52,10 +75,10 @@ func (h *Host) Validate() error {
 // If any schema have a role with the same name as one of the global roles, then for each that role
 // permissions of the schemas specific roles will overwrite permissions of the global roles.
 // Also adds in schemas all global roles that wasn't explicitly specified for them.
-func (h *Host) MergeRoles() {
+func (h *rawHost) MergeRoles() {
 	debugLog("[ RBAC ] Merging Host permissions of global and schemas roles...")
 
-    schemas := make([]Schema, len(h.Schemas))
+    schemas := make([]*rawSchema, len(h.Schemas))
 
 	for i, oldSchema := range h.Schemas {
         schema := oldSchema
@@ -66,7 +89,7 @@ func (h *Host) MergeRoles() {
             continue
         }
 
-        roles := []Role{}
+        roles := []*rawRole{}
 
 		for _, schemaRole := range schema.Roles {
 			for _, globalRole := range h.GlobalRoles {
@@ -99,13 +122,16 @@ func LoadHost(path string) (Host, error) {
         return zero, err
     }
 
-    host := raw.Normalize()
+    raw.MergeRoles()
+
+    host, err := raw.Normalize()
+    if err != nil {
+        return zero, err
+    }
 
 	if err = host.Validate(); err != nil {
 		return zero, err
 	}
-
-	host.MergeRoles()
 
 	return *host, nil
 }

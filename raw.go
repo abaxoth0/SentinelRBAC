@@ -1,6 +1,7 @@
 package rbac
 
 import (
+	"fmt"
 	"slices"
 )
 
@@ -81,32 +82,54 @@ func normalizeRoles(rawRoles []*rawRole) []Role {
     return roles
 }
 
-func normalizeDefaultRoles(roles []Role, defaultRolesNames []string) []Role {
+func normalizeDefaultRoles(roles []Role, defaultRolesNames []string) ([]Role, error) {
     defaultRoles := []Role{}
 
-    for i, role := range roles {
+    for _, role := range roles {
         if slices.Contains(defaultRolesNames, role.Name) {
-            defaultRoles = append(defaultRoles, roles[i])
+            defaultRoles = append(defaultRoles, role)
         }
     }
 
-    return defaultRoles
+    if len(defaultRoles) != len(defaultRolesNames) {
+        outer:
+        for _, roleName := range defaultRolesNames {
+            for _, role := range defaultRoles {
+                if roleName == role.Name {
+                    continue outer;
+                }
+
+            }
+
+            return nil, fmt.Errorf(
+                "Invalid role '%s'. This role doesn't exists in Schema roles",
+                roleName,
+            )
+        }
+    }
+
+    return defaultRoles, nil
 }
 
 // Creates new Schema based on self.
-func (s *rawSchema) Normalize() *Schema {
+func (s *rawSchema) Normalize() (*Schema, error) {
     debugLog("[ RBAC ] Normalizing schema...")
 
     var schema = new(Schema)
 
+    var err error
+
     schema.ID = s.ID
     schema.Name = s.Name
     schema.Roles = normalizeRoles(s.Roles)
-    schema.DefaultRoles = normalizeDefaultRoles(schema.Roles, s.DefaultRolesNames)
+    schema.DefaultRoles, err = normalizeDefaultRoles(schema.Roles, s.DefaultRolesNames)
+    if err != nil {
+        return nil, err
+    }
 
     debugLog("[ RBAC ] Normalizing schema: OK")
 
-    return schema
+    return schema, nil
 }
 
 type rawHost struct {
@@ -116,7 +139,7 @@ type rawHost struct {
 }
 
 // Creates new Host based on self.
-func (h *rawHost) Normalize() *Host {
+func (h *rawHost) Normalize() (*Host, error) {
     debugLog("[ RBAC ] Normalizing host...")
 
     var host = new(Host)
@@ -124,22 +147,34 @@ func (h *rawHost) Normalize() *Host {
     host.Schemas = make([]Schema, len(h.Schemas))
 
     for i, rawSchema := range h.Schemas {
+        roles := normalizeRoles(rawSchema.Roles)
+
+        defaultRoles, err := normalizeDefaultRoles(
+            roles,
+            rawSchema.DefaultRolesNames,
+        )
+        if err != nil {
+            return nil, err
+        }
+
         host.Schemas[i] = NewSchema(
             rawSchema.ID,
             rawSchema.Name,
-            normalizeRoles(rawSchema.Roles),
-            normalizeDefaultRoles(
-                host.Schemas[i].Roles,
-                rawSchema.DefaultRolesNames,
-            ),
+            roles,
+            defaultRoles,
         )
     }
 
+    var err error
+
     host.GlobalRoles = normalizeRoles(h.GlobalRoles)
-    host.DefaultRoles = normalizeDefaultRoles(host.GlobalRoles, h.DefaultRolesNames)
+    host.DefaultRoles, err = normalizeDefaultRoles(host.GlobalRoles, h.DefaultRolesNames)
+    if err != nil {
+        return nil, err
+    }
 
     debugLog("[ RBAC ] Normalizing host: OK")
 
-    return host
+    return host, nil
 }
 
