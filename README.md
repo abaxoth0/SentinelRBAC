@@ -239,7 +239,7 @@ All schemas in `Host` must have all its global roles, but permissions for this r
             "name": "post-service",
             "default-roles": [
                 "moderator",
-            [,
+            ],
             "roles": [
                 {
                     "name": "user",
