@@ -109,19 +109,21 @@ func main() {
 }
 ```
 
-## Config
+## Schema
 
-`Config` designed to help you organize roles in convenient human-readble form.
+`Schema` designed to help you organize roles in convenient human-readble form.
 
 You can also select several roles as default roles, all new users must have this roles.
 
-`Config` should be defined in it's own file in JSON format. It can be loaded via **LoadConfig(path string) (Config, error)**.
+`Schema` should be defined in it's own file in JSON format. It can be loaded via **LoadSchema(path string) (Schema, error)**.
 
-### Config example
+### Schema configuration example
 
 ```json
 {
-    "default-roles": [
+    "id": "schema-id", (optional)
+    "name": "my-schema", (optional)
+    "default-roles": [ (optional)
         "user"
     ],
     "roles": [
@@ -170,15 +172,14 @@ You can also select several roles as default roles, all new users must have this
 
 ## Host
 
-`Host` originaly desined for applications with microservice architectures.
+`Host` originaly designed for applications with microservice architectures.
 
-`Host` helps to define roles and schemas for each service in your app.
-Roles can be specified by default or schemas can have their own roles.
+`Host` is based on `Schema`, using it you can define multiple schemas.
+Like each schema, `Host` can have roles and global roles, in this case they considered as global.
+All schemas in `Host` must have all its global roles, but permissions for this roles may differ in each schema.
 
-> [!NOTE]
-> Service specific roles will overwrite default roles!
-
-Like in `Config` you can specify default roles.
+> [!WARNING]
+> Schema specific roles permissions will overwrite global roles permissions!
 
 `Host` can be initialized by one of the following methods:
 
@@ -236,6 +237,9 @@ Like in `Config` you can specify default roles.
         {
             "id": "5b87cfb3-4d13-4d1d-ab3d-44d5d0c17b8a",
             "name": "post-service",
+            "default-roles": [
+                "moderator",
+            [,
             "roles": [
                 {
                     "name": "user",
