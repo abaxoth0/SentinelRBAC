@@ -1,10 +1,5 @@
 package rbac
 
-import (
-	"errors"
-	"fmt"
-)
-
 // Host originaly desined for applications with microservice architectures.
 //
 // Host helps to define roles and schemas for each service in your app.
@@ -31,44 +26,6 @@ func (h *Host) GetSchema(ID string) (*Schema, *Error) {
     }
 
     return nil, NewError("Schema with id \"" + ID + "\" wasn't found")
-}
-
-func (h *Host) Validate() error {
-	debugLog("[ RBAC ] Validating host...")
-
-	if len(h.Schemas) == 0 {
-		return errors.New("At least one schema must be defined")
-	}
-
-    for _, schema := range h.Schemas {
-        if err := schema.Validate(); err != nil {
-            return err
-        }
-
-        outer:
-        for _, defaultRole := range schema.DefaultRoles {
-            for _, role := range schema.Roles {
-                if role.Name == defaultRole.Name {
-                    continue outer;
-                }
-            }
-
-            return fmt.Errorf(
-                "Invalid default role '%s' in schema '%s' (%s). It must be one of this schema's roles",
-                defaultRole.Name,
-                schema.Name,
-                schema.ID,
-            )
-        }
-    }
-
-    if err := validateDefaultRoles(h.GlobalRoles, h.DefaultRoles); err != nil {
-        return err
-    }
-
-    debugLog("[ RBAC ] Validating host: OK")
-
-    return nil
 }
 
 // Merges permissions from schema specific roles with global roles.
@@ -115,24 +72,13 @@ func (h *rawHost) MergeRoles() {
 // After loading and normalizing, validates this Host and returns an error if any of them were detected.
 // Also merges permissions of the schema specific roles with permissions of the global roles.
 func LoadHost(path string) (Host, error) {
-    var zero Host
-
-    raw, err := load[rawHost](path)
+    host, err := load(path, func(raw *rawHost) {
+        raw.MergeRoles()
+    })
     if err != nil {
-        return zero, err
+        return Host{}, err
     }
 
-    raw.MergeRoles()
-
-    host, err := raw.Normalize()
-    if err != nil {
-        return zero, err
-    }
-
-	if err = host.Validate(); err != nil {
-		return zero, err
-	}
-
-	return *host, nil
+    return host, nil
 }
 

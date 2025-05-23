@@ -91,6 +91,7 @@ func normalizeDefaultRoles(roles []Role, defaultRolesNames []string) ([]Role, er
         }
     }
 
+    // TODO deduplicate that? (check validateDefaultRoles())
     if len(defaultRoles) != len(defaultRolesNames) {
         outer:
         for _, roleName := range defaultRolesNames {
@@ -112,10 +113,10 @@ func normalizeDefaultRoles(roles []Role, defaultRolesNames []string) ([]Role, er
 }
 
 // Creates new Schema based on self.
-func (s *rawSchema) Normalize() (*Schema, error) {
+func (s *rawSchema) Normalize() (Schema, error) {
     debugLog("[ RBAC ] Normalizing schema...")
 
-    var schema = new(Schema)
+    schema := Schema{}
 
     var err error
 
@@ -124,10 +125,25 @@ func (s *rawSchema) Normalize() (*Schema, error) {
     schema.Roles = normalizeRoles(s.Roles)
     schema.DefaultRoles, err = normalizeDefaultRoles(schema.Roles, s.DefaultRolesNames)
     if err != nil {
-        return nil, err
+        return Schema{}, err
     }
 
     debugLog("[ RBAC ] Normalizing schema: OK")
+
+    return schema, nil
+}
+
+func (s *rawSchema) NormalizeAndValidate() (Schema, error) {
+    var zero Schema
+
+    schema, err :=s.Normalize()
+    if err != nil {
+        return zero, err
+    }
+
+    if err := ValidateSchema(&schema); err != nil {
+        return zero, err
+    }
 
     return schema, nil
 }
@@ -139,10 +155,12 @@ type rawHost struct {
 }
 
 // Creates new Host based on self.
-func (h *rawHost) Normalize() (*Host, error) {
+func (h *rawHost) Normalize() (Host, error) {
+    var zero Host
+
     debugLog("[ RBAC ] Normalizing host...")
 
-    var host = new(Host)
+    host := Host{}
 
     host.Schemas = make([]Schema, len(h.Schemas))
 
@@ -154,7 +172,7 @@ func (h *rawHost) Normalize() (*Host, error) {
             rawSchema.DefaultRolesNames,
         )
         if err != nil {
-            return nil, err
+            return zero, err
         }
 
         host.Schemas[i] = NewSchema(
@@ -170,10 +188,25 @@ func (h *rawHost) Normalize() (*Host, error) {
     host.GlobalRoles = normalizeRoles(h.GlobalRoles)
     host.DefaultRoles, err = normalizeDefaultRoles(host.GlobalRoles, h.DefaultRolesNames)
     if err != nil {
-        return nil, err
+        return zero, err
     }
 
     debugLog("[ RBAC ] Normalizing host: OK")
+
+    return host, nil
+}
+
+func (h rawHost) NormalizeAndValidate() (Host, error) {
+    var zero Host
+
+    host, err := h.Normalize()
+    if err != nil {
+        return zero, err
+    }
+
+    if err := ValidateHost(&host); err != nil {
+        return zero, err
+    }
 
     return host, nil
 }

@@ -4,21 +4,27 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 )
 
-func load[T any](path string) (*T, error) {
+type loadable[T any] interface {
+    NormalizeAndValidate() (T, error)
+}
+
+// postLoad is called after file was loaded and parsed, but before normalization and validation.
+func load[T any, R loadable[T]](path string, postLoad func(*R)) (T, error) {
+    var zero T
+
     debugLog("[ RBAC ] Loading '"+path+"'...")
 
 	file, err := os.Open(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, errors.New("RBAC host configuration file wasn't found")
+			return zero, errors.New("RBAC host configuration file wasn't found")
 		}
 
-		return nil, err
+		return zero, err
 	}
 	defer func() {
 		if err = file.Close(); err != nil {
@@ -29,35 +35,25 @@ func load[T any](path string) (*T, error) {
 
 	buf, err := io.ReadAll(file)
 	if err != nil {
-		return nil, err
+		return zero, err
 	}
 
-	raw := new(T)
-	if err := json.NewDecoder(bytes.NewReader(buf)).Decode(raw); err != nil {
-		return nil, errors.New("Failed to parse RBAC host configuration file: " + err.Error())
+    var raw R
+	if err := json.NewDecoder(bytes.NewReader(buf)).Decode(&raw); err != nil {
+		return zero, errors.New("Failed to parse RBAC host configuration file: " + err.Error())
 	}
+
+    if postLoad != nil {
+        postLoad(&raw)
+    }
+
+    result, err := raw.NormalizeAndValidate()
+    if err != nil {
+        return zero, err
+    }
 
     debugLog("[ RBAC ] Loading '"+path+"': OK")
 
-	return raw, nil
-}
-
-func validateDefaultRoles(roles []Role, defaultRoles []Role) error {
-    outer:
-    for _, defaultRole := range defaultRoles {
-        for _, role := range roles {
-            if defaultRole.Name == role.Name {
-                continue outer;
-            }
-
-        }
-
-        return fmt.Errorf(
-            "Invalid role '%s'. This role doesn't exists in Schema roles",
-            defaultRole.Name,
-        )
-    }
-
-    return nil
+	return result, nil
 }
 

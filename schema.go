@@ -26,37 +26,14 @@ func (schema *Schema) ParseRole(roleName string) (Role, *Error) {
 	return Role{}, NewError("Role \"" + roleName + "\" wasn't found in schema \"" + schema.Name + "\"")
 }
 
-func (s *Schema) Validate() error {
-    debugLog("[ RBAC ] Validating schema '"+s.Name+"' ("+s.ID+")...")
-
-    if err := validateDefaultRoles(s.Roles, s.DefaultRoles); err != nil {
-        return err
-    }
-
-    debugLog("[ RBAC ] Validating schema '"+s.Name+"' ("+s.ID+"): OK")
-
-    return nil
-}
-
 // Reads and parses RBAC schema from file at the specified path.
 // After loading and normalizing, it validates schema and returns an error if any of them were detected.
 func LoadSchema(path string) (Schema, error) {
-    var zero Schema
-
-    raw, err := load[rawSchema](path)
+    schema, err := load[Schema, *rawSchema](path, nil)
     if err != nil {
-        return zero, err
+        return Schema{}, err
     }
 
-    schema, err := raw.Normalize()
-    if err != nil {
-        return zero, err
-    }
-
-	if err = schema.Validate(); err != nil {
-		return zero, err
-	}
-
-	return *schema, nil
+    return schema, nil
 }
 
