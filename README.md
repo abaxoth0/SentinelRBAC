@@ -61,7 +61,7 @@ package main
 import (
     "fmt"
 
-    rbac "github.com/StepanAnanin/SentinelRBAC"
+    rbac "github.com/abaxoth0/SentinelRBAC"
 )
 
 func main() {
