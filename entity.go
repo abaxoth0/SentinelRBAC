@@ -5,14 +5,22 @@ import "errors"
 type Entity struct {
 	Name 	string
 	actions	map[Action]Permissions
+	rolesPermissions map[string]Permissions
 }
 
 // Creates a new entity with the specified name.
-func NewEntity(name string) Entity {
-	return Entity{
+func NewEntity(name string, roles []Role) Entity {
+	entity := &Entity{
 		Name: name,
 		actions: make(map[Action]Permissions),
+		rolesPermissions: make(map[string]Permissions),
 	}
+
+	for _, role := range roles {
+		entity.rolesPermissions[role.Name] = role.Permissions
+	}
+
+	return *entity
 }
 
 // Creates action with given name for specified entity.

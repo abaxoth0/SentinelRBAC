@@ -3,21 +3,13 @@ package rbac
 import "errors"
 
 type Resource struct {
-	Name             string
-	RolesPermissions map[string]Permissions
+	Name string
 }
 
-func NewResource(name string, roles []Role) *Resource {
-	r := &Resource{
-		Name:        name,
-		RolesPermissions: make(map[string]Permissions),
+func NewResource(name string) *Resource {
+	return &Resource{
+		Name: name,
 	}
-
-	for _, role := range roles {
-		r.RolesPermissions[role.Name] = role.Permissions
-	}
-
-	return r
 }
 
 // Checks if the user has sufficient permissions to perform an action on this resource.
@@ -32,7 +24,7 @@ func (r *Resource) Authorize(entity Entity, act Action, rolesNames []string) err
     mergredPermissions := Permissions(0)
 
     for _, roleName := range rolesNames {
-        mergredPermissions |= r.RolesPermissions[roleName]
+        mergredPermissions |= entity.rolesPermissions[roleName]
     }
 
     if err := authorize(requiredPermissions, mergredPermissions); err == nil {
