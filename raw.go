@@ -64,7 +64,6 @@ type rawRole struct {
 
 type rawSchema struct {
     ID                string     `json:"id"`
-    Name              string     `json:"name"`
     Roles             []*rawRole `json:"roles,omitempty"`
     DefaultRolesNames []string   `json:"default-roles,omitempty"`
 }
@@ -121,7 +120,6 @@ func (s *rawSchema) Normalize() (Schema, error) {
     var err error
 
     schema.ID = s.ID
-    schema.Name = s.Name
     schema.Roles = normalizeRoles(s.Roles)
     schema.DefaultRoles, err = normalizeDefaultRoles(schema.Roles, s.DefaultRolesNames)
     if err != nil {
@@ -175,12 +173,7 @@ func (h *rawHost) Normalize() (Host, error) {
             return zero, err
         }
 
-        host.Schemas[i] = NewSchema(
-            rawSchema.ID,
-            rawSchema.Name,
-            roles,
-            defaultRoles,
-        )
+        host.Schemas[i] = NewSchema(rawSchema.ID, roles, defaultRoles)
     }
 
     var err error

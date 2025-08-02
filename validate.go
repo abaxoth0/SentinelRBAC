@@ -25,13 +25,13 @@ func validateDefaultRoles(roles []Role, defaultRoles []Role) error {
 }
 
 func ValidateSchema(schema *Schema) error {
-    Debug.Log("[ RBAC ] Validating schema '"+schema.Name+"' ("+schema.ID+")...")
+    Debug.Log("[ RBAC ] Validating schema '"+schema.ID+"' ("+schema.ID+")...")
 
     if err := validateDefaultRoles(schema.Roles, schema.DefaultRoles); err != nil {
         return err
     }
 
-    Debug.Log("[ RBAC ] Validating schema '"+schema.Name+"' ("+schema.ID+"): OK")
+    Debug.Log("[ RBAC ] Validating schema '"+schema.ID+"' ("+schema.ID+"): OK")
 
     return nil
 }
@@ -57,9 +57,8 @@ func ValidateHost(host *Host) error {
             }
 
             return fmt.Errorf(
-                "Invalid default role '%s' in schema '%s' (%s). It must be one of this schema's roles",
+				"Invalid default role '%s' in '%s' schema: there are no such role in this schema",
                 defaultRole.Name,
-                schema.Name,
                 schema.ID,
             )
         }

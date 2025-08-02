@@ -2,15 +2,13 @@ package rbac
 
 type Schema struct {
     ID           string
-    Name         string
     Roles        []Role
     DefaultRoles []Role
 }
 
-func NewSchema(id string, name string, roles []Role, defaultRoles []Role) Schema {
+func NewSchema(id string, roles []Role, defaultRoles []Role) Schema {
 	return Schema{
         ID:    id,
-        Name:  name,
         Roles: roles,
         DefaultRoles: defaultRoles,
 	}
@@ -23,7 +21,7 @@ func (schema *Schema) ParseRole(roleName string) (Role, *Error) {
 		}
 	}
 
-	return Role{}, NewError("Role \"" + roleName + "\" wasn't found in schema \"" + schema.Name + "\"")
+	return Role{}, NewError("\""+schema.ID+"\" schema doesn't have \""+roleName+"\" role")
 }
 
 // Reads and parses RBAC schema from file at the specified path.
