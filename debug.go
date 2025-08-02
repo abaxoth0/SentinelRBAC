@@ -3,6 +3,7 @@ package rbac
 import (
 	"errors"
 	"log"
+	"os"
 )
 
 type debugger struct {
@@ -27,6 +28,10 @@ func (d *debugger) SetLogger(logger *log.Logger) error {
 }
 
 var Debug = &debugger{
-	logger: log.Default(),
+	logger: log.New(
+		os.Stdout,
+		"[ RBAC:DEBUG ] ",
+		log.Ldate|log.Ltime,
+	),
 }
 

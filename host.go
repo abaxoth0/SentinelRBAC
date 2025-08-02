@@ -33,7 +33,7 @@ func (h *Host) GetSchema(ID string) (*Schema, *Error) {
 // permissions of the schemas specific roles will overwrite permissions of the global roles.
 // Also adds in schemas all global roles that wasn't explicitly specified for them.
 func (h *rawHost) MergeRoles() {
-	Debug.Log("[ RBAC ] Merging Host permissions of global and schemas roles...")
+	Debug.Log("Merging Host permissions of global and schemas roles...")
 
     schemas := make([]*rawSchema, len(h.Schemas))
 
@@ -65,7 +65,7 @@ func (h *rawHost) MergeRoles() {
 
     h.Schemas = schemas
 
-    Debug.Log("[ RBAC ] Merging Host permissions of global and schemas roles: OK")
+    Debug.Log("Merging Host permissions of global and schemas roles: OK")
 }
 
 // Reads RBAC host configuration file from the given path.

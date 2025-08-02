@@ -113,7 +113,7 @@ func normalizeDefaultRoles(roles []Role, defaultRolesNames []string) ([]Role, er
 
 // Creates new Schema based on self.
 func (s *rawSchema) Normalize() (Schema, error) {
-    Debug.Log("[ RBAC ] Normalizing schema...")
+    Debug.Log("Normalizing schema...")
 
     schema := Schema{}
 
@@ -126,7 +126,7 @@ func (s *rawSchema) Normalize() (Schema, error) {
         return Schema{}, err
     }
 
-    Debug.Log("[ RBAC ] Normalizing schema: OK")
+    Debug.Log("Normalizing schema: OK")
 
     return schema, nil
 }
@@ -156,7 +156,7 @@ type rawHost struct {
 func (h *rawHost) Normalize() (Host, error) {
     var zero Host
 
-    Debug.Log("[ RBAC ] Normalizing host...")
+    Debug.Log("Normalizing host...")
 
     host := Host{}
 
@@ -184,7 +184,7 @@ func (h *rawHost) Normalize() (Host, error) {
         return zero, err
     }
 
-    Debug.Log("[ RBAC ] Normalizing host: OK")
+    Debug.Log("Normalizing host: OK")
 
     return host, nil
 }
