@@ -16,7 +16,7 @@ type loadable[T any] interface {
 func load[T any, R loadable[T]](path string, postLoad func(*R)) (T, error) {
     var zero T
 
-    debugLog("[ RBAC ] Loading '"+path+"'...")
+    Debug.Log("[ RBAC ] Loading '"+path+"'...")
 
 	file, err := os.Open(path)
 	if err != nil {
@@ -28,7 +28,7 @@ func load[T any, R loadable[T]](path string, postLoad func(*R)) (T, error) {
 	}
 	defer func() {
 		if err = file.Close(); err != nil {
-			debugLog(err.Error())
+			Debug.Log(err.Error())
 			os.Exit(1)
 		}
 	}()
@@ -52,7 +52,7 @@ func load[T any, R loadable[T]](path string, postLoad func(*R)) (T, error) {
         return zero, err
     }
 
-    debugLog("[ RBAC ] Loading '"+path+"': OK")
+    Debug.Log("[ RBAC ] Loading '"+path+"': OK")
 
 	return result, nil
 }

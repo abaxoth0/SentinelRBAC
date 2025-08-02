@@ -25,19 +25,19 @@ func validateDefaultRoles(roles []Role, defaultRoles []Role) error {
 }
 
 func ValidateSchema(schema *Schema) error {
-    debugLog("[ RBAC ] Validating schema '"+schema.Name+"' ("+schema.ID+")...")
+    Debug.Log("[ RBAC ] Validating schema '"+schema.Name+"' ("+schema.ID+")...")
 
     if err := validateDefaultRoles(schema.Roles, schema.DefaultRoles); err != nil {
         return err
     }
 
-    debugLog("[ RBAC ] Validating schema '"+schema.Name+"' ("+schema.ID+"): OK")
+    Debug.Log("[ RBAC ] Validating schema '"+schema.Name+"' ("+schema.ID+"): OK")
 
     return nil
 }
 
 func ValidateHost(host *Host) error {
-	debugLog("[ RBAC ] Validating host...")
+	Debug.Log("[ RBAC ] Validating host...")
 
 	if len(host.Schemas) == 0 {
 		return errors.New("At least one schema must be defined")
@@ -69,7 +69,7 @@ func ValidateHost(host *Host) error {
         return err
     }
 
-    debugLog("[ RBAC ] Validating host: OK")
+    Debug.Log("[ RBAC ] Validating host: OK")
 
     return nil
 }

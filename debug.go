@@ -1,16 +1,32 @@
 package rbac
 
 import (
+	"errors"
 	"log"
-	"sync/atomic"
 )
 
-// Package will work in debug mode if true
-var Debug atomic.Bool
+type debugger struct {
+	Enabled bool
+	logger *log.Logger
+}
 
-func debugLog(msg string) {
-    if Debug.Load() {
-        log.Println(msg)
-    }
+func (d *debugger) Log(v ...any) {
+	if d.Enabled {
+		d.logger.Println(v...)
+	}
+}
+
+func (d *debugger) SetLogger(logger *log.Logger) error {
+	if logger == nil {
+		return errors.New("Debug logger can't be nil")
+	}
+
+	d.logger = logger
+
+	return nil
+}
+
+var Debug = &debugger{
+	logger: log.Default(),
 }
 
