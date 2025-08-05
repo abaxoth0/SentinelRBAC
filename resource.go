@@ -1,30 +1,44 @@
 package rbac
 
-import "errors"
-
 type Resource struct {
-	Name string
+	name 			 string
 }
 
 func NewResource(name string) *Resource {
 	return &Resource{
-		Name: name,
+		name: name,
 	}
+}
+
+func (r *Resource) Name() string {
+	return r.name
 }
 
 // Checks if the user has sufficient permissions to perform an action on this resource.
 //
 // Returns an error if any of the required permissions for the action are not covered by given roles.
-func (r *Resource) Authorize(entity Entity, act Action, rolesNames []string) error {
+func (r *Resource) Authorize(entity Entity, act Action, roles []Role, AGP *ActionGatePolicy) *Error {
     if !entity.HasAction(act) {
-        return errors.New("\""+act.String()+"\" entity doesn't have \""+act.String()+"\" action")
+        return EntityDoesNotHaveSuchAction
     }
+
+	if AGP != nil {
+		if rule, ok := AGP.GetRule(&entity, act, r); ok {
+			bypass, err := rule.Apply(act, roles)
+			if err != nil {
+				return err
+			}
+			if bypass {
+				return nil
+			}
+		}
+	}
 
 	requiredPermissions := entity.actions[act]
     mergredPermissions := Permissions(0)
 
-    for _, roleName := range rolesNames {
-        mergredPermissions |= entity.rolesPermissions[roleName]
+    for _, role := range roles {
+        mergredPermissions |= role.Permissions
     }
 
     if err := authorize(requiredPermissions, mergredPermissions); err == nil {
