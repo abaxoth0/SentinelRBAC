@@ -44,7 +44,7 @@ func Authorize(ctx *AuthorizationContext, roles []Role, AGP *ActionGatePolicy) *
     }
 
 	if AGP != nil {
-		if rule, ok := AGP.GetRule(ctx.Entity, ctx.Action, ctx.Resource); ok {
+		if rule, ok := AGP.GetRule(ctx); ok {
 			bypass, err := rule.Apply(ctx.Action, roles)
 			if err != nil {
 				return err

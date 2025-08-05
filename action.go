@@ -118,8 +118,8 @@ func (agp ActionGatePolicy) keyFrom(entity *Entity, act Action, resource *Resour
 	return entityName+":"+act.String()+":"+resource.name
 }
 
-func (agp ActionGatePolicy) GetRule(entity *Entity, act Action, resource *Resource) (*ActionGateRule, bool) {
-	rule, ok := agp.rules[agp.keyFrom(entity, act, resource)]
+func (agp ActionGatePolicy) GetRule(ctx *AuthorizationContext) (*ActionGateRule, bool) {
+	rule, ok := agp.rules[agp.keyFrom(ctx.Entity, ctx.Action, ctx.Resource)]
 	return rule, ok
 }
 
