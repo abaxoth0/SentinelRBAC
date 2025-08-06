@@ -44,6 +44,16 @@ type ActionGateRule struct {
 	Resource	Resource
 }
 
+func NewActionGateRule(ctx *AuthorizationContext, effect ActionGateEffect, roles []Role) *ActionGateRule {
+	return &ActionGateRule{
+		Entity: *ctx.Entity,
+		Effect: effect,
+		Roles: roles,
+		Action: ctx.Action,
+		Resource: *ctx.Resource,
+	}
+}
+
 // Validates that required fields are non-zero.
 func (r *ActionGateRule) Validate() *Error {
 	if err := r.Effect.Validate(); err != nil {
@@ -114,11 +124,7 @@ func NewActionGatePolicy() ActionGatePolicy {
 }
 
 func (agp ActionGatePolicy) keyFrom(entity *Entity, act Action, resource *Resource) string {
-	entityName := entity.name
-	if entity == nil {
-		entityName = "*"
-	}
-	return entityName+":"+act.String()+":"+resource.name
+	return entity.name+":"+act.String()+":"+resource.name
 }
 
 func (agp ActionGatePolicy) GetRule(ctx *AuthorizationContext) (*ActionGateRule, bool) {
