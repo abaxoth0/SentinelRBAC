@@ -62,10 +62,36 @@ type rawRole struct {
     Permissions *rawPermissions `json:"permissions"`
 }
 
+type rawAction struct {
+	Name 				string 			`json:"name"`
+	RequiredPermissions *rawPermissions `json:"required-permissions"`
+}
+
+type rawActionGateRules struct {
+	// Entities
+	For 		[]string 	`json:"for"`
+	// Roles
+	Having 		[]string 	`json:"having,omitempty"`
+	// Effect
+	Apply 		string 		`json:"apply"`
+	// Actions
+	Doing		[]string	`json:"doing"`
+	// Resource
+	On 			string 		`json:"on"`
+}
+
+type rawEntity struct {
+	Name 	string 		 `json:"name"`
+	Actions []*rawAction `json:"actions"`
+}
+
 type rawSchema struct {
-    ID                string     `json:"id"`
-    Roles             []*rawRole `json:"roles,omitempty"`
-    DefaultRolesNames []string   `json:"default-roles,omitempty"`
+    ID                string     			`json:"id"`
+	DefaultRolesNames []string   			`json:"default-roles,omitempty"`
+    Roles             []*rawRole 			`json:"roles,omitempty"`
+	Entities		  []*rawEntity 			`json:"entities,omitempty"`
+	Resources		  []string		 		`json:"resources,omitempty"`
+	ActionGatePolicy  []*rawActionGateRules	`json:"action-gate-policy,omitempty"`
 }
 
 func normalizeRoles(rawRoles []*rawRole) []Role {
@@ -82,7 +108,7 @@ func normalizeRoles(rawRoles []*rawRole) []Role {
 }
 
 func normalizeDefaultRoles(roles []Role, defaultRolesNames []string) ([]Role, error) {
-    defaultRoles := []Role{}
+    defaultRoles := make([]Role, 0, len(defaultRolesNames))
 
     for _, role := range roles {
         if slices.Contains(defaultRolesNames, role.Name) {
@@ -100,15 +126,141 @@ func normalizeDefaultRoles(roles []Role, defaultRolesNames []string) ([]Role, er
                 }
 
             }
-
             return nil, fmt.Errorf(
-                "Invalid role '%s'. This role doesn't exists in Schema roles",
+                "Invalid role '%s'. This role doesn't exist in Schema roles",
                 roleName,
             )
         }
     }
 
     return defaultRoles, nil
+}
+
+// Used to get slice of normalized elements using their raw representations.
+func getNormalFrom[T any](raw []string, normal []T, cmp func(a string, b T) bool) ([]T, error) {
+	result := make([]T, 0, len(raw))
+
+	main_loop:
+	for _, rawItem := range raw {
+		for _, normalItem := range normal {
+			if cmp(rawItem, normalItem) {
+				result = append(result, normalItem)
+				continue main_loop
+			}
+		}
+		return nil, fmt.Errorf("\"%s\" doesn't exist", rawItem)
+	}
+
+	return result, nil
+}
+
+func normalizeActionGatePolicy(
+	schemaEntities 	[]Entity,
+	schemaRoles 	[]Role,
+	schemaResources []Resource,
+	rawAgp 			[]*rawActionGateRules,
+) (ActionGatePolicy, error) {
+	var zero ActionGatePolicy
+
+	agp := NewActionGatePolicy()
+
+	for _, rawRule := range rawAgp {
+		var ruleResource Resource
+		var zeroResource Resource
+
+		for _, resource := range schemaResources {
+			if resource.name == rawRule.On {
+				ruleResource = resource
+				break
+			}
+		}
+		if ruleResource == zeroResource {
+			return zero, fmt.Errorf("Resource %s doesn't exist in the schema resources", rawRule.On)
+		}
+
+		if rawRule.For == nil || len(rawRule.For) == 0 {
+			return zero, fmt.Errorf("Rule missing entity(-s) for the %s resource", ruleResource.name)
+		}
+
+		ruleEntities, err := getNormalFrom(rawRule.For, schemaEntities, func(a string, b Entity) bool {
+			return a == b.name
+		})
+		if err != nil {
+			return zero, fmt.Errorf("Failed to get normalized entity - %s", err.Error())
+		}
+
+		ruleRoles, err := getNormalFrom(rawRule.Having, schemaRoles, func(a string, b Role) bool {
+			return a == b.Name
+		})
+		if err != nil {
+			return zero, fmt.Errorf("Failed to get normalized roles - %s", err.Error())
+		}
+
+		for _, ruleEntity := range ruleEntities {
+			if rawRule.Doing == nil || len(rawRule.Doing) == 0 {
+				return zero, fmt.Errorf(
+					"Rule missing action(-s) for the %s entity on the %s resource",
+					ruleEntity.name, ruleResource.name,
+				)
+			}
+
+			actions := make([]Action, 0, len(ruleEntity.actions))
+			for action := range ruleEntity.actions {
+				actions = append(actions, action)
+			}
+
+			ruleActions, err := getNormalFrom(rawRule.Doing, actions, func(a string, b Action) bool {
+				return a == b.String()
+			})
+			if err != nil {
+				return zero, fmt.Errorf("Failed to get normalized action for the %s entity - %s", ruleEntity.name, err.Error())
+			}
+
+			for _, ruleAction := range ruleActions {
+				err := agp.AddRule(&ActionGateRule{
+					Entity: ruleEntity,
+					Effect: ActionGateEffect(rawRule.Apply),
+					Roles: ruleRoles,
+					Action: ruleAction,
+					Resource: ruleResource,
+				})
+				if err != nil {
+					return zero, err
+				}
+			}
+		}
+	}
+
+	return agp, nil
+}
+
+func normalizeEntities(rawEntities []*rawEntity) []Entity {
+	entities := make([]Entity, 0, len(rawEntities))
+
+	for _, rawEntity := range rawEntities {
+		entity := NewEntity(rawEntity.Name)
+
+		for _, rawAct := range rawEntity.Actions {
+			entity.NewAction(rawAct.Name, rawAct.RequiredPermissions.ToBitmask())
+		}
+
+		entities = append(entities, entity)
+	}
+
+	return entities
+}
+
+
+func normalizeResources(rawResources []string) []Resource {
+	resorces := make([]Resource, len(rawResources))
+
+	for _, rawResource := range rawResources {
+		resorces = append(resorces, Resource{
+			name: rawResource,
+		})
+	}
+
+	return resorces
 }
 
 // Creates new Schema based on self.
@@ -121,10 +273,27 @@ func (s *rawSchema) Normalize() (Schema, error) {
 
     schema.ID = s.ID
     schema.Roles = normalizeRoles(s.Roles)
-    schema.DefaultRoles, err = normalizeDefaultRoles(schema.Roles, s.DefaultRolesNames)
+
+	defaultRoles, err := normalizeDefaultRoles(schema.Roles, s.DefaultRolesNames)
     if err != nil {
         return Schema{}, err
     }
+
+	schema.DefaultRoles = defaultRoles
+	schema.Entities = normalizeEntities(s.Entities)
+	schema.Resources = normalizeResources(s.Resources)
+
+	agp, err := normalizeActionGatePolicy(
+		schema.Entities,
+		schema.Roles,
+		schema.Resources,
+		s.ActionGatePolicy,
+	)
+	if err != nil {
+		return Schema{}, fmt.Errorf("Failed to normalize Action Gate Policy for the %s schema: %s", schema.ID, err.Error())
+	}
+
+	schema.ActionGatePolicy = agp
 
     Debug.Log("Normalizing schema: OK")
 
@@ -163,17 +332,11 @@ func (h *rawHost) Normalize() (Host, error) {
     host.Schemas = make([]Schema, len(h.Schemas))
 
     for i, rawSchema := range h.Schemas {
-        roles := normalizeRoles(rawSchema.Roles)
-
-        defaultRoles, err := normalizeDefaultRoles(
-            roles,
-            rawSchema.DefaultRolesNames,
-        )
-        if err != nil {
-            return zero, err
-        }
-
-        host.Schemas[i] = NewSchema(rawSchema.ID, roles, defaultRoles)
+		schema, err := rawSchema.Normalize()
+		if err != nil {
+			return zero, err
+		}
+		host.Schemas[i] = schema
     }
 
     var err error

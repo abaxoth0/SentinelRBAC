@@ -1,16 +1,20 @@
 package rbac
 
 type Schema struct {
-    ID           string
-    Roles        []Role
-    DefaultRoles []Role
+    ID           	 string
+    Roles        	 []Role
+    DefaultRoles 	 []Role
+	Entities	 	 []Entity
+	Resources	 	 []Resource
+	ActionGatePolicy ActionGatePolicy
 }
 
-func NewSchema(id string, roles []Role, defaultRoles []Role) Schema {
+func NewSchema(id string, roles []Role, defaultRoles []Role, agp ActionGatePolicy) Schema {
 	return Schema{
         ID:    id,
         Roles: roles,
         DefaultRoles: defaultRoles,
+		ActionGatePolicy: agp,
 	}
 }
 
