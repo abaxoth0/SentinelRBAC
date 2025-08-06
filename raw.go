@@ -148,7 +148,7 @@ func getNormalFrom[T any](raw []string, normal []T, cmp func(a string, b T) bool
 				continue main_loop
 			}
 		}
-		return nil, fmt.Errorf("%s doesn't exists", rawItem)
+		return nil, fmt.Errorf("\"%s\" doesn't exist", rawItem)
 	}
 
 	return result, nil
@@ -156,7 +156,6 @@ func getNormalFrom[T any](raw []string, normal []T, cmp func(a string, b T) bool
 
 func normalizeActionGatePolicy(
 	schemaEntities 	[]Entity,
-	schemaActions 	[]Action,
 	schemaRoles 	[]Role,
 	schemaResources []Resource,
 	rawAgp 			[]*rawActionGateRules,
@@ -205,11 +204,16 @@ func normalizeActionGatePolicy(
 				)
 			}
 
-			ruleActions, err := getNormalFrom(rawRule.Doing, schemaActions, func(a string, b Action) bool {
+			actions := make([]Action, 0, len(ruleEntity.actions))
+			for action := range ruleEntity.actions {
+				actions = append(actions, action)
+			}
+
+			ruleActions, err := getNormalFrom(rawRule.Doing, actions, func(a string, b Action) bool {
 				return a == b.String()
 			})
 			if err != nil {
-				return zero, fmt.Errorf("Failed to get normalized action - %s", err.Error())
+				return zero, fmt.Errorf("Failed to get normalized action for the %s entity - %s", ruleEntity.name, err.Error())
 			}
 
 			for _, ruleAction := range ruleActions {
@@ -279,21 +283,12 @@ func (s *rawSchema) Normalize() (Schema, error) {
 	schema.Entities = normalizeEntities(s.Entities)
 	schema.Resources = normalizeResources(s.Resources)
 
-	var actions []Action
-	for _, entity := range schema.Entities {
-		for action := range entity.actions {
-			actions = append(actions, action)
-		}
-	}
-
 	agp, err := normalizeActionGatePolicy(
 		schema.Entities,
-		actions,
 		schema.Roles,
 		schema.Resources,
 		s.ActionGatePolicy,
 	)
-
 	if err != nil {
 		return Schema{}, fmt.Errorf("Failed to normalize Action Gate Policy for the %s schema: %s", schema.ID, err.Error())
 	}

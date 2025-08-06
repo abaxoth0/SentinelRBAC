@@ -57,10 +57,8 @@ func validateAGP(schema *Schema) error {
 		}
 
 		actions := []Action{}
-		for _, entity := range schema.Entities {
-			for action := range entity.actions {
-				actions = append(actions, action)
-			}
+		for action := range rule.Entity.actions {
+			actions = append(actions, action)
 		}
 
 		if !slices.Contains(actions, rule.Action) {
