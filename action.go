@@ -49,6 +49,9 @@ func (r *ActionGateRule) Validate() *Error {
 	if err := r.Effect.Validate(); err != nil {
 		return NewError("Invalid Action Gate Rule: " + err.Error())
 	}
+	if r.Roles == nil || len(r.Roles) == 0 {
+		return NewError("Invalid Action Gate Rule: Roles are missing")
+	}
 	if r.Entity.name == "" {
 		return NewError("Invalid Action Gate Rule: Entity name is missing")
 	}

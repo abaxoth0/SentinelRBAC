@@ -70,10 +70,10 @@ type rawAction struct {
 type rawActionGateRules struct {
 	// Entities
 	For 		[]string 	`json:"for"`
+	// Roles
+	Having 		[]string 	`json:"having,omitempty"`
 	// Effect
 	Apply 		string 		`json:"apply"`
-	// Roles
-	If 			[]string 	`json:"if,omitempty"`
 	// Actions
 	Doing		[]string	`json:"doing"`
 	// Resource
@@ -190,7 +190,7 @@ func normalizeActionGatePolicy(
 			return zero, fmt.Errorf("Failed to get normalized entity - %s", err.Error())
 		}
 
-		ruleRoles, err := getNormalFrom(rawRule.If, schemaRoles, func(a string, b Role) bool {
+		ruleRoles, err := getNormalFrom(rawRule.Having, schemaRoles, func(a string, b Role) bool {
 			return a == b.Name
 		})
 		if err != nil {
@@ -295,7 +295,7 @@ func (s *rawSchema) Normalize() (Schema, error) {
 	)
 
 	if err != nil {
-		return Schema{}, fmt.Errorf("Failed to normalize Action Gate Policy for schema %s: %s", schema.ID, err.Error())
+		return Schema{}, fmt.Errorf("Failed to normalize Action Gate Policy for the %s schema: %s", schema.ID, err.Error())
 	}
 
 	schema.ActionGatePolicy = agp
