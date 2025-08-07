@@ -1,11 +1,11 @@
 package rbac
 
 type Error struct {
-	Message string
+	message string
 }
 
 func (e *Error) Error() string {
-	return e.Message
+	return e.message
 }
 
 func NewError(message string) *Error {
