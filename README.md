@@ -138,7 +138,7 @@ There are all existing effects:
 | Allow   | `AllowActionGateEffect`   | Immediately authorize regardless of roles                                                  |
 
 > [!CAUTION]
-> Although you can create your own effects, since `ActionGateEffect` is public type, **you must not do this at any circustances**.
+> Although you can create your own effects, since `ActionGateEffect` is public type, **you must not do this at any circumstances**.
 > If you will try to do that anyway - `AddRule()` method will return error if it will found effect which differs from effects specified in the table above.
 >
 > Why? - Cuz all effects are handled internaly and there are no way to add your own custom handlers for them.
