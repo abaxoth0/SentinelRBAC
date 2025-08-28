@@ -133,9 +133,9 @@ There are all existing effects:
 
 | Name    | Variable name             | Effect                                                                                     |
 | ------- | ------------------------- | ------------------------------------------------------------------------------------------ |
-| Deny    | `DenyActionGateEffect`    | Deny action regardless of roles                                                            |
+| Deny    | `DenyActionGateEffect`    | Deny action regardless of permissions                                                      |
 | Require | `RequireActionGateEffect` | Require specific role(-s). Without this role(-s) all authorization attempts will be denied |
-| Allow   | `AllowActionGateEffect`   | Immediately authorize regardless of roles                                                  |
+| Allow   | `AllowActionGateEffect`   | Immediately authorize regardless of permissions                                            |
 
 > [!CAUTION]
 > Although you can create your own effects, since `ActionGateEffect` is public type, **you must not do this at any circumstances**.
@@ -213,9 +213,9 @@ func main() {
 
 In it you can also select several roles as default.
 
-`Schema` should be defined in it's own file in JSON format. It can be loaded via `LoadSchema(path string) (Schema, error)`.
+`Schema` can be configured via JSON file and loaded using **LoadSchema(path string) (Schema, error)** function.
 
-### Schema configuration example
+### Schema configuration example in JSON
 
 ```json
 {
@@ -337,11 +337,9 @@ All schemas in `Host` must have all its global roles, but permissions for this r
 > [!WARNING]
 > Schema specific roles permissions will overwrite global roles permissions!
 
-`Host` can be initialized by one of the following methods:
+Like `Schema`, `Host` also can be loaded from JSON file using **LoadHost(path string) (Host, error)** function.
 
--   **LoadHost(path string) (Host, error)** - Loads `Host` from file. Also this method validates permissions and merges global roles permissions with permissions of the schemas specific roles.
-
-### Host example
+### Host configuration example in JSON
 
 ```json
 {
