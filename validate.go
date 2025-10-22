@@ -7,22 +7,22 @@ import (
 )
 
 func validateDefaultRoles(roles []Role, defaultRoles []Role) error {
-    outer:
-    for _, defaultRole := range defaultRoles {
-        for _, role := range roles {
-            if defaultRole.Name == role.Name {
-                continue outer;
-            }
+outer:
+	for _, defaultRole := range defaultRoles {
+		for _, role := range roles {
+			if defaultRole.Name == role.Name {
+				continue outer
+			}
 
-        }
+		}
 
-        return fmt.Errorf(
-            "Invalid role '%s'. This role doesn't exist in Schema roles",
-            defaultRole.Name,
-        )
-    }
+		return fmt.Errorf(
+			"Invalid role '%s'. This role doesn't exist in Schema roles",
+			defaultRole.Name,
+		)
+	}
 
-    return nil
+	return nil
 }
 
 func validateAGP(schema *Schema) error {
@@ -73,18 +73,18 @@ func validateAGP(schema *Schema) error {
 }
 
 func ValidateSchema(schema *Schema) error {
-    Debug.Log("Validating schema '"+schema.ID+"' ("+schema.ID+")...")
+	Debug.Log("Validating schema '" + schema.ID + "' (" + schema.ID + ")...")
 
-    if err := validateDefaultRoles(schema.Roles, schema.DefaultRoles); err != nil {
-        return err
-    }
+	if err := validateDefaultRoles(schema.Roles, schema.DefaultRoles); err != nil {
+		return err
+	}
 	if err := validateAGP(schema); err != nil {
 		return err
 	}
 
-    Debug.Log("Validating schema '"+schema.ID+"' ("+schema.ID+"): OK")
+	Debug.Log("Validating schema '" + schema.ID + "' (" + schema.ID + "): OK")
 
-    return nil
+	return nil
 }
 
 func ValidateHost(host *Host) error {
@@ -94,33 +94,32 @@ func ValidateHost(host *Host) error {
 		return errors.New("At least one schema must be defined")
 	}
 
-    for _, schema := range host.Schemas {
-        if err := ValidateSchema(&schema); err != nil {
-            return err
-        }
+	for _, schema := range host.Schemas {
+		if err := ValidateSchema(&schema); err != nil {
+			return err
+		}
 
-        outer:
-        for _, defaultRole := range schema.DefaultRoles {
-            for _, role := range schema.Roles {
-                if role.Name == defaultRole.Name {
-                    continue outer;
-                }
-            }
+	outer:
+		for _, defaultRole := range schema.DefaultRoles {
+			for _, role := range schema.Roles {
+				if role.Name == defaultRole.Name {
+					continue outer
+				}
+			}
 
-            return fmt.Errorf(
+			return fmt.Errorf(
 				"Invalid default role '%s' in '%s' schema: there are no such role in this schema",
-                defaultRole.Name,
-                schema.ID,
-            )
-        }
-    }
+				defaultRole.Name,
+				schema.ID,
+			)
+		}
+	}
 
-    if err := validateDefaultRoles(host.GlobalRoles, host.DefaultRoles); err != nil {
-        return err
-    }
+	if err := validateDefaultRoles(host.GlobalRoles, host.DefaultRoles); err != nil {
+		return err
+	}
 
-    Debug.Log("Validating host: OK")
+	Debug.Log("Validating host: OK")
 
-    return nil
+	return nil
 }
-

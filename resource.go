@@ -1,7 +1,7 @@
 package rbac
 
 type Resource struct {
-	name 			 string
+	name string
 }
 
 func NewResource(name string) *Resource {
@@ -13,4 +13,3 @@ func NewResource(name string) *Resource {
 func (r *Resource) Name() string {
 	return r.name
 }
-

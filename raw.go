@@ -5,6 +5,8 @@ import (
 	"slices"
 )
 
+// TODO add partional loading (to be able for example to init all actions in code, but load AGP from config)
+
 // "raw" structs are design to be used by host and schema to be able being initialized from files.
 // They are more user-friendly, but also more "heavy".
 //
@@ -27,120 +29,120 @@ type rawPermissions struct {
 }
 
 func (r rawPermissions) ToBitmask() Permissions {
-    var permissions Permissions
+	var permissions Permissions
 
-    if r.Create {
-        permissions |= CreatePermission
-    }
-    if r.SelfCreate {
-        permissions |= SelfCreatePermission
-    }
-    if r.Read {
-        permissions |= ReadPermission
-    }
-    if r.SelfRead {
-        permissions |= SelfReadPermission
-    }
-    if r.Update {
-        permissions |= UpdatePermission
-    }
-    if r.SelfUpdate {
-        permissions |= SelfUpdatePermission
-    }
-    if r.Delete {
-        permissions |= DeletePermission
-    }
-    if r.SelfDelete {
-        permissions |= SelfDeletePermission
-    }
+	if r.Create {
+		permissions |= CreatePermission
+	}
+	if r.SelfCreate {
+		permissions |= SelfCreatePermission
+	}
+	if r.Read {
+		permissions |= ReadPermission
+	}
+	if r.SelfRead {
+		permissions |= SelfReadPermission
+	}
+	if r.Update {
+		permissions |= UpdatePermission
+	}
+	if r.SelfUpdate {
+		permissions |= SelfUpdatePermission
+	}
+	if r.Delete {
+		permissions |= DeletePermission
+	}
+	if r.SelfDelete {
+		permissions |= SelfDeletePermission
+	}
 
-    return permissions
+	return permissions
 }
 
 type rawRole struct {
-    Name        string          `json:"name"`
-    Permissions *rawPermissions `json:"permissions"`
+	Name        string          `json:"name"`
+	Permissions *rawPermissions `json:"permissions"`
 }
 
 type rawAction struct {
-	Name 				string 			`json:"name"`
+	Name                string          `json:"name"`
 	RequiredPermissions *rawPermissions `json:"required-permissions"`
 }
 
 type rawActionGateRules struct {
 	// Entities
-	For 		[]string 	`json:"for"`
+	For []string `json:"for"`
 	// Roles
-	Having 		[]string 	`json:"having,omitempty"`
+	Having []string `json:"having,omitempty"`
 	// Effect
-	Apply 		string 		`json:"apply"`
+	Apply string `json:"apply"`
 	// Actions
-	Doing		[]string	`json:"doing"`
+	Doing []string `json:"doing"`
 	// Resource
-	On 			string 		`json:"on"`
+	On string `json:"on"`
 }
 
 type rawEntity struct {
-	Name 	string 		 `json:"name"`
+	Name    string       `json:"name"`
 	Actions []*rawAction `json:"actions"`
 }
 
 type rawSchema struct {
-    ID                string     			`json:"id"`
-	DefaultRolesNames []string   			`json:"default-roles,omitempty"`
-    Roles             []*rawRole 			`json:"roles,omitempty"`
-	Entities		  []*rawEntity 			`json:"entities,omitempty"`
-	Resources		  []string		 		`json:"resources,omitempty"`
-	ActionGatePolicy  []*rawActionGateRules	`json:"action-gate-policy,omitempty"`
+	ID                string                `json:"id"`
+	DefaultRolesNames []string              `json:"default-roles,omitempty"`
+	Roles             []*rawRole            `json:"roles,omitempty"`
+	Entities          []*rawEntity          `json:"entities,omitempty"`
+	Resources         []string              `json:"resources,omitempty"`
+	ActionGatePolicy  []*rawActionGateRules `json:"action-gate-policy,omitempty"`
 }
 
 func normalizeRoles(rawRoles []*rawRole) []Role {
-    roles := make([]Role, len(rawRoles))
+	roles := make([]Role, len(rawRoles))
 
-    for i, rawRole := range rawRoles {
-        roles[i] = NewRole(
-            rawRole.Name,
-            rawRole.Permissions.ToBitmask(),
-        )
-    }
+	for i, rawRole := range rawRoles {
+		roles[i] = NewRole(
+			rawRole.Name,
+			rawRole.Permissions.ToBitmask(),
+		)
+	}
 
-    return roles
+	return roles
 }
 
 func normalizeDefaultRoles(roles []Role, defaultRolesNames []string) ([]Role, error) {
-    defaultRoles := make([]Role, 0, len(defaultRolesNames))
+	defaultRoles := make([]Role, 0, len(defaultRolesNames))
 
-    for _, role := range roles {
-        if slices.Contains(defaultRolesNames, role.Name) {
-            defaultRoles = append(defaultRoles, role)
-        }
-    }
+	for _, role := range roles {
+		if slices.Contains(defaultRolesNames, role.Name) {
+			defaultRoles = append(defaultRoles, role)
+		}
+	}
 
-    // TODO deduplicate that? (check validateDefaultRoles())
-    if len(defaultRoles) != len(defaultRolesNames) {
-        outer:
-        for _, roleName := range defaultRolesNames {
-            for _, role := range defaultRoles {
-                if roleName == role.Name {
-                    continue outer;
-                }
+	// TODO deduplicate that? (check validateDefaultRoles())
+	if len(defaultRoles) != len(defaultRolesNames) {
+	outer:
+		for _, roleName := range defaultRolesNames {
+			for _, role := range defaultRoles {
+				if roleName == role.Name {
+					continue outer
+				}
 
-            }
-            return nil, fmt.Errorf(
-                "Invalid role '%s'. This role doesn't exist in Schema roles",
-                roleName,
-            )
-        }
-    }
+			}
+			return nil, fmt.Errorf(
+				"Invalid role '%s'. This role doesn't exist in Schema roles",
+				roleName,
+			)
+		}
+	}
 
-    return defaultRoles, nil
+	return defaultRoles, nil
 }
 
 // Used to get slice of normalized elements using their raw representations.
 func getNormalFrom[T any](raw []string, normal []T, cmp func(a string, b T) bool) ([]T, error) {
 	result := make([]T, 0, len(raw))
 
-	main_loop:
+main_loop:
 	for _, rawItem := range raw {
 		for _, normalItem := range normal {
 			if cmp(rawItem, normalItem) {
@@ -155,10 +157,10 @@ func getNormalFrom[T any](raw []string, normal []T, cmp func(a string, b T) bool
 }
 
 func normalizeActionGatePolicy(
-	schemaEntities 	[]Entity,
-	schemaRoles 	[]Role,
+	schemaEntities []Entity,
+	schemaRoles []Role,
 	schemaResources []Resource,
-	rawAgp 			[]*rawActionGateRules,
+	rawAgp []*rawActionGateRules,
 ) (ActionGatePolicy, error) {
 	var zero ActionGatePolicy
 
@@ -218,10 +220,10 @@ func normalizeActionGatePolicy(
 
 			for _, ruleAction := range ruleActions {
 				err := agp.AddRule(&ActionGateRule{
-					Entity: ruleEntity,
-					Effect: ActionGateEffect(rawRule.Apply),
-					Roles: ruleRoles,
-					Action: ruleAction,
+					Entity:   ruleEntity,
+					Effect:   ActionGateEffect(rawRule.Apply),
+					Roles:    ruleRoles,
+					Action:   ruleAction,
 					Resource: ruleResource,
 				})
 				if err != nil {
@@ -250,7 +252,6 @@ func normalizeEntities(rawEntities []*rawEntity) []Entity {
 	return entities
 }
 
-
 func normalizeResources(rawResources []string) []Resource {
 	resorces := make([]Resource, len(rawResources))
 
@@ -265,19 +266,19 @@ func normalizeResources(rawResources []string) []Resource {
 
 // Creates new Schema based on self.
 func (s *rawSchema) Normalize() (Schema, error) {
-    Debug.Log("Normalizing schema...")
+	Debug.Log("Normalizing schema...")
 
-    schema := Schema{}
+	schema := Schema{}
 
-    var err error
+	var err error
 
-    schema.ID = s.ID
-    schema.Roles = normalizeRoles(s.Roles)
+	schema.ID = s.ID
+	schema.Roles = normalizeRoles(s.Roles)
 
 	defaultRoles, err := normalizeDefaultRoles(schema.Roles, s.DefaultRolesNames)
-    if err != nil {
-        return Schema{}, err
-    }
+	if err != nil {
+		return Schema{}, err
+	}
 
 	schema.DefaultRoles = defaultRoles
 	schema.Entities = normalizeEntities(s.Entities)
@@ -295,75 +296,74 @@ func (s *rawSchema) Normalize() (Schema, error) {
 
 	schema.ActionGatePolicy = agp
 
-    Debug.Log("Normalizing schema: OK")
+	Debug.Log("Normalizing schema: OK")
 
-    return schema, nil
+	return schema, nil
 }
 
 func (s *rawSchema) NormalizeAndValidate() (Schema, error) {
-    var zero Schema
+	var zero Schema
 
-    schema, err :=s.Normalize()
-    if err != nil {
-        return zero, err
-    }
+	schema, err := s.Normalize()
+	if err != nil {
+		return zero, err
+	}
 
-    if err := ValidateSchema(&schema); err != nil {
-        return zero, err
-    }
+	if err := ValidateSchema(&schema); err != nil {
+		return zero, err
+	}
 
-    return schema, nil
+	return schema, nil
 }
 
 type rawHost struct {
-    DefaultRolesNames []string     `json:"default-roles,omitempty"`
-    GlobalRoles       []*rawRole   `json:"roles"`
+	DefaultRolesNames []string     `json:"default-roles,omitempty"`
+	GlobalRoles       []*rawRole   `json:"roles"`
 	Schemas           []*rawSchema `json:"schemas"`
 }
 
 // Creates new Host based on self.
 func (h *rawHost) Normalize() (Host, error) {
-    var zero Host
+	var zero Host
 
-    Debug.Log("Normalizing host...")
+	Debug.Log("Normalizing host...")
 
-    host := Host{}
+	host := Host{}
 
-    host.Schemas = make([]Schema, len(h.Schemas))
+	host.Schemas = make([]Schema, len(h.Schemas))
 
-    for i, rawSchema := range h.Schemas {
+	for i, rawSchema := range h.Schemas {
 		schema, err := rawSchema.Normalize()
 		if err != nil {
 			return zero, err
 		}
 		host.Schemas[i] = schema
-    }
+	}
 
-    var err error
+	var err error
 
-    host.GlobalRoles = normalizeRoles(h.GlobalRoles)
-    host.DefaultRoles, err = normalizeDefaultRoles(host.GlobalRoles, h.DefaultRolesNames)
-    if err != nil {
-        return zero, err
-    }
+	host.GlobalRoles = normalizeRoles(h.GlobalRoles)
+	host.DefaultRoles, err = normalizeDefaultRoles(host.GlobalRoles, h.DefaultRolesNames)
+	if err != nil {
+		return zero, err
+	}
 
-    Debug.Log("Normalizing host: OK")
+	Debug.Log("Normalizing host: OK")
 
-    return host, nil
+	return host, nil
 }
 
 func (h rawHost) NormalizeAndValidate() (Host, error) {
-    var zero Host
+	var zero Host
 
-    host, err := h.Normalize()
-    if err != nil {
-        return zero, err
-    }
+	host, err := h.Normalize()
+	if err != nil {
+		return zero, err
+	}
 
-    if err := ValidateHost(&host); err != nil {
-        return zero, err
-    }
+	if err := ValidateHost(&host); err != nil {
+		return zero, err
+	}
 
-    return host, nil
+	return host, nil
 }
-
