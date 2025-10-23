@@ -5,16 +5,16 @@ import (
 	"slices"
 )
 
-// TODO add partional loading (to be able for example to init all actions in code, but load AGP from config)
+// TODO add partial loading (to be able for example to init all actions in code, but load AGP from config)
 
-// "raw" structs are design to be used by host and schema to be able being initialized from files.
+// "raw" structs are designed to be used by host and schema to be able to be initialized from files.
 // They are more user-friendly, but also more "heavy".
 //
 // So for example - rawPermissions is just a struct which consists of flags,
 // instead original Permissions is bitmask.
-// Of course rawPermissions more convenient and readable, but also more slow.
+// Of course rawPermissions are more convenient and readable, but also slower.
 // For example:
-// For authz using Permissions used bitwise operations which are extrimely fast,
+// For authz using Permissions used bitwise operations which are extremely fast,
 // but using rawPermissions the only way is to check all flag one-by-one in 'if' statements.
 
 type rawPermissions struct {
@@ -253,15 +253,15 @@ func normalizeEntities(rawEntities []*rawEntity) []Entity {
 }
 
 func normalizeResources(rawResources []string) []Resource {
-	resorces := make([]Resource, len(rawResources))
+	resources := make([]Resource, 0, len(rawResources))
 
 	for _, rawResource := range rawResources {
-		resorces = append(resorces, Resource{
+		resources = append(resources, Resource{
 			name: rawResource,
 		})
 	}
 
-	return resorces
+	return resources
 }
 
 // Creates new Schema based on self.

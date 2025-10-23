@@ -6,7 +6,7 @@ var authorize AuthzFunc = AuthorizeCRUDFunc
 
 // AuthorizationFunc checks user's permissions.
 //
-// This function is incapsulated in rbac package, so it can't be called directly,
+// This function is encapsulated in rbac package, so it can't be called directly,
 // instead use "Authorize" function.
 //
 // AuthorizationFunc can be overridden via this function, to implement custom authorization logic.
