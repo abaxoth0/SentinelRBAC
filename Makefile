@@ -44,12 +44,16 @@ build:
 
 # Build example
 build-example:
-	go build -v ./cmd/...
+	@if [ -d "./cmd" ]; then \
+		go build -v -o example ./cmd/...; \
+	else \
+		echo "No cmd directory found, skipping example build"; \
+	fi
 
 # Clean build artifacts
 clean:
 	go clean
-	rm -f coverage.out coverage.html
+	rm -f coverage.out coverage.html example
 
 # Install dependencies
 deps:

@@ -83,4 +83,9 @@ jobs:
       run: go build -v ./...
       
     - name: Build example
-      run: go build -v ./cmd/...
+      run: |
+        if [ -d "./cmd" ]; then
+          go build -v -o example ./cmd/...
+        else
+          echo "No cmd directory found, skipping example build"
+        fi
