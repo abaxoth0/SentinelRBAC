@@ -9,14 +9,14 @@ import (
 )
 
 type loadable[T any] interface {
-    NormalizeAndValidate() (T, error)
+	NormalizeAndValidate() (T, error)
 }
 
 // postLoad is called after file was loaded and parsed, but before normalization and validation.
 func load[T any, R loadable[T]](path string, postLoad func(*R)) (T, error) {
-    var zero T
+	var zero T
 
-    Debug.Log("Loading '"+path+"'...")
+	Debug.Log("Loading '" + path + "'...")
 
 	file, err := os.Open(path)
 	if err != nil {
@@ -38,22 +38,21 @@ func load[T any, R loadable[T]](path string, postLoad func(*R)) (T, error) {
 		return zero, err
 	}
 
-    var raw R
+	var raw R
 	if err := json.NewDecoder(bytes.NewReader(buf)).Decode(&raw); err != nil {
 		return zero, errors.New("Failed to parse RBAC host configuration file: " + err.Error())
 	}
 
-    if postLoad != nil {
-        postLoad(&raw)
-    }
+	if postLoad != nil {
+		postLoad(&raw)
+	}
 
-    result, err := raw.NormalizeAndValidate()
-    if err != nil {
-        return zero, err
-    }
+	result, err := raw.NormalizeAndValidate()
+	if err != nil {
+		return zero, err
+	}
 
-    Debug.Log("Loading '"+path+"': OK")
+	Debug.Log("Loading '" + path + "': OK")
 
 	return result, nil
 }
-

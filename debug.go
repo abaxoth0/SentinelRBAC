@@ -8,7 +8,7 @@ import (
 
 type debugger struct {
 	Enabled bool
-	logger *log.Logger
+	logger  *log.Logger
 }
 
 func (d *debugger) Log(v ...any) {
@@ -34,4 +34,3 @@ var Debug = &debugger{
 		log.Ldate|log.Ltime,
 	),
 }
-

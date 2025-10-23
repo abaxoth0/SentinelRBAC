@@ -21,4 +21,3 @@ func GetRolesNames(roles []Role) []string {
 
 	return names
 }
-

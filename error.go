@@ -1,11 +1,11 @@
 package rbac
 
 type Error struct {
-	Message string
+	message string
 }
 
 func (e *Error) Error() string {
-	return e.Message
+	return e.message
 }
 
 func NewError(message string) *Error {
@@ -13,8 +13,7 @@ func NewError(message string) *Error {
 }
 
 var (
-	InsufficientPermissions 	= NewError("Insufficient permissions to perform this action")
+	InsufficientPermissions     = NewError("Insufficient permissions to perform this action")
 	EntityDoesNotHaveSuchAction = NewError("Entity doesn't have such action")
-	ActionDeniedByAGP			= NewError("Action has been denied by Action Gate Policy")
+	ActionDeniedByAGP           = NewError("Action has been denied by Action Gate Policy")
 )
-

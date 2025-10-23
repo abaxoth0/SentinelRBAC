@@ -3,14 +3,14 @@ package rbac
 import "errors"
 
 type Entity struct {
-	name 	string
-	actions	map[Action]Permissions
+	name    string
+	actions map[Action]Permissions
 }
 
 // Creates a new entity with the specified name.
 func NewEntity(name string) Entity {
 	return Entity{
-		name: name,
+		name:    name,
 		actions: make(map[Action]Permissions),
 	}
 }
@@ -25,7 +25,7 @@ func (e Entity) NewAction(name string, requiredPermissions Permissions) (Action,
 	act := Action(name)
 
 	if e.HasAction(act) {
-		return "", errors.New("\""+e.name+"\" entity already has \""+name+"\" action")
+		return "", errors.New("\"" + e.name + "\" entity already has \"" + name + "\" action")
 	}
 
 	e.actions[act] = requiredPermissions
@@ -46,4 +46,3 @@ func (e Entity) GetRequiredActionPermissions(act Action) (Permissions, bool) {
 	p, ok := e.actions[act]
 	return p, ok
 }
-

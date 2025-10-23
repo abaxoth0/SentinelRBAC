@@ -14,7 +14,7 @@ type ActionGateEffect string
 
 func (e ActionGateEffect) Validate() error {
 	if ok := agEffectMap[e]; !ok {
-		return errors.New("Action Gate Effect \""+string(e)+"\" doesn't exist")
+		return errors.New("Action Gate Effect \"" + string(e) + "\" doesn't exist")
 	}
 	return nil
 }
@@ -30,26 +30,26 @@ const (
 
 // Used for validating AG effects
 var agEffectMap = map[ActionGateEffect]bool{
-	DenyActionGateEffect: true,
+	DenyActionGateEffect:    true,
 	RequireActionGateEffect: true,
-	AllowActionGateEffect: true,
+	AllowActionGateEffect:   true,
 }
 
 // Required fields are: Entity, Effect, Action and Resource.
 type ActionGateRule struct {
-	Entity 		Entity
-	Effect	 	ActionGateEffect
-	Roles 		[]Role
-	Action		Action
-	Resource	Resource
+	Entity   Entity
+	Effect   ActionGateEffect
+	Roles    []Role
+	Action   Action
+	Resource Resource
 }
 
 func NewActionGateRule(ctx *AuthorizationContext, effect ActionGateEffect, roles []Role) *ActionGateRule {
 	return &ActionGateRule{
-		Entity: *ctx.Entity,
-		Effect: effect,
-		Roles: roles,
-		Action: ctx.Action,
+		Entity:   *ctx.Entity,
+		Effect:   effect,
+		Roles:    roles,
+		Action:   ctx.Action,
 		Resource: *ctx.Resource,
 	}
 }
@@ -124,7 +124,7 @@ func NewActionGatePolicy() ActionGatePolicy {
 }
 
 func (agp ActionGatePolicy) keyFrom(entity *Entity, act Action, resource *Resource) string {
-	return entity.name+":"+act.String()+":"+resource.name
+	return entity.name + ":" + act.String() + ":" + resource.name
 }
 
 func (agp ActionGatePolicy) GetRule(ctx *AuthorizationContext) (*ActionGateRule, bool) {
@@ -142,11 +142,10 @@ func (agp ActionGatePolicy) AddRule(rule *ActionGateRule) *Error {
 	key := agp.keyFrom(&rule.Entity, rule.Action, &rule.Resource)
 
 	if _, ok := agp.rules[key]; ok {
-		return NewError("Rule "+key+" already exist in Action Gate Policy")
+		return NewError("Rule " + key + " already exist in Action Gate Policy")
 	}
 
 	agp.rules[key] = rule
 
 	return nil
 }
-

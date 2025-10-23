@@ -1,0 +1,154 @@
+{
+    "default-roles": [
+        "unconfirmed_user"
+    ],
+    "roles": [
+        {
+            "name": "unconfirmed_user",
+            "permissions": {
+                "read": false,
+                "self-read": false,
+                "create": false,
+                "self-create": false,
+                "update": false,
+                "self-update": false,
+                "delete": false,
+                "self-delete": true
+            }
+        },
+        {
+            "name": "restricted_user",
+            "permissions": {
+                "read": false,
+                "self-read": true,
+                "create": false,
+                "self-create": false,
+                "update": false,
+                "self-update": false,
+                "delete": false,
+                "self-delete": true
+            }
+        },
+        {
+            "name": "user",
+            "permissions": {
+                "read": false,
+                "self-read": true,
+                "create": false,
+                "self-create": false,
+                "update": false,
+                "self-update": true,
+                "delete": false,
+                "self-delete": true
+            }
+        },
+        {
+            "name": "support",
+            "permissions": {
+                "read": true,
+                "self-read": false,
+                "create": false,
+                "self-create": false,
+                "update": false,
+                "self-update": true,
+                "delete": false,
+                "self-delete": false
+            }
+        },
+        {
+            "name": "moderator",
+            "permissions": {
+                "read": true,
+                "self-read": true,
+                "create": true,
+                "self-create": true,
+                "update": true,
+                "self-update": true,
+                "delete": true,
+                "self-delete": true
+            }
+        },
+        {
+            "name": "admin",
+            "permissions": {
+                "read": true,
+                "self-read": true,
+                "create": true,
+                "self-create": true,
+                "update": true,
+                "self-update": true,
+                "delete": true,
+                "self-delete": true
+            }
+        }
+    ],
+    "schemas": [
+        {
+            "id": "auth-service",
+            "default-roles": [
+                "admin"
+            ],
+            "roles": [
+                {
+                    "name": "unconfirmed_user",
+                    "permissions": {
+                        "read": false,
+                        "self-read": true,
+                        "create": false,
+                        "self-create": false,
+                        "update": false,
+                        "self-update": false,
+                        "delete": false,
+                        "self-delete": false
+                    }
+                }
+            ],
+            "resources": ["cache","user"],
+            "entities": [
+                {
+                    "name": "service",
+                    "actions": [
+                        {
+                            "name": "read",
+                            "required-permissions": {
+                                "read": true
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "user",
+                    "actions": [
+                        {
+                            "name": "delete",
+                            "required-permissions": {
+                                "delete": true
+                            }
+                        },
+                        {
+                            "name": "self-delete",
+                            "required-permissions": {
+                                "self-delete": true
+                            }
+                        },
+                        {
+                            "name": "change-password",
+                            "required-permissions": {
+                                "update": true
+                            }
+                        }
+                    ]
+                }
+            ],
+            "action-gate-policy": [
+                {
+                    "for": ["user"],
+                    "having": ["admin"],
+                    "apply": "require",
+                    "doing": ["delete"],
+                    "on": "cache"
+                }
+            ]
+        }
+    ]
+}

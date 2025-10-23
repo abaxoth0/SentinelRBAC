@@ -1,1 +1,17 @@
-cmd
+# Test coverage files
+coverage.out
+coverage.html
+
+# Go build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go test binary
+*.test
+
+# Go coverage files
+*.cover
+*.coverprofile

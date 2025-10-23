@@ -111,6 +111,42 @@ func main() {
 }
 ```
 
+## Development
+
+### Running Tests
+```bash
+# Run all tests
+make test
+
+# Run tests with race detection
+make test-race
+
+# Run tests with coverage
+make test-coverage
+
+# Generate detailed coverage report
+make coverage
+```
+
+### Code Quality
+```bash
+# Run linters
+make lint
+
+# Build the project
+make build
+
+# Clean build artifacts
+make clean
+```
+
+### CI/CD
+This project uses GitHub Actions for continuous integration:
+- **Tests**: Run on every push and pull request
+- **Linting**: Code formatting and quality checks
+- **Build**: Ensures the project builds successfully
+- **Coverage**: Test coverage reporting
+
 ## Action Gate Policy (AGP)
 
 As you can see `Authorize()` function actually has 3 arguments, we already know about first two - context and roles, but what about the last one?
