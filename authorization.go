@@ -1,6 +1,6 @@
 package rbac
 
-type AuthzFunc func(Permissions, Permissions) *Error
+type AuthzFunc func(Permissions, Permissions) error
 
 var authorize AuthzFunc = AuthorizeCRUDFunc
 
@@ -22,14 +22,14 @@ func SetAuthzFunc(fn AuthzFunc) {
 // Checks if the "permitted" permissions are sufficient to satisfy the "required" CRUD permissions.
 //
 // It returns an "InsufficientPermissions" error if any of the "required" permissions are not covered by the "permitted" permissions.
-func AuthorizeCRUDFunc(required Permissions, permitted Permissions) *Error {
+func AuthorizeCRUDFunc(required Permissions, permitted Permissions) error {
 	// To verify that 'permitted' satisfies 'required' need to check
 	// if all 1 bits in 'required' are set in 'permitted',
 	// For that need to perform a bitwise AND between 'required' and 'permitted',
 	// then verify if the result equals 'required'.
 	// If (required & permitted) == required, all ones in required are present in permitted.
 	if required&permitted != required {
-		return InsufficientPermissions
+		return ErrInsufficientPermissions
 	}
 
 	return nil
@@ -38,9 +38,9 @@ func AuthorizeCRUDFunc(required Permissions, permitted Permissions) *Error {
 // Checks if the user has sufficient permissions to perform an action on this resource.
 //
 // Returns an error if any of the required permissions for the action are not covered by given roles.
-func Authorize(ctx *AuthorizationContext, roles []Role, AGP *ActionGatePolicy) *Error {
+func Authorize(ctx *AuthorizationContext, roles []Role, AGP *ActionGatePolicy) error {
 	if !ctx.Entity.HasAction(ctx.Action) {
-		return EntityDoesNotHaveSuchAction
+		return ErrEntityDoesNotHaveSuchAction
 	}
 
 	if AGP != nil {
@@ -66,5 +66,5 @@ func Authorize(ctx *AuthorizationContext, roles []Role, AGP *ActionGatePolicy) *
 		return nil
 	}
 
-	return InsufficientPermissions
+	return ErrInsufficientPermissions
 }

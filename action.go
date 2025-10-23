@@ -55,29 +55,29 @@ func NewActionGateRule(ctx *AuthorizationContext, effect ActionGateEffect, roles
 }
 
 // Validates that required fields are non-zero.
-func (r *ActionGateRule) Validate() *Error {
+func (r *ActionGateRule) Validate() error {
 	if err := r.Effect.Validate(); err != nil {
-		return NewError("Invalid Action Gate Rule: " + err.Error())
+		return errors.New("invalid action gate rule: " + err.Error())
 	}
 	if r.Roles == nil || len(r.Roles) == 0 {
-		return NewError("Invalid Action Gate Rule: Roles are missing")
+		return errors.New("invalid action gate rule: roles are missing")
 	}
 	if r.Entity.name == "" {
-		return NewError("Invalid Action Gate Rule: Entity name is missing")
+		return errors.New("invalid action gate rule: entity name is missing")
 	}
 	if r.Action == "" {
-		return NewError("Invalid Action Gate Rule: Action is missing")
+		return errors.New("invalid action gate rule: action is missing")
 	}
 	var zeroResource Resource
 	if r.Resource == zeroResource {
-		return NewError("Invalid Action Gate Rule: Resource is missing")
+		return errors.New("invalid action gate rule: resource is missing")
 	}
 	return nil
 }
 
 // Applies this rule for the given action with roles.
 // Returns true if default authorization must be skipped.
-func (r *ActionGateRule) Apply(act Action, roles []Role) (bypassAuthz bool, err *Error) {
+func (r *ActionGateRule) Apply(act Action, roles []Role) (bypassAuthz bool, err error) {
 	if r.Roles != nil && r.Action != act {
 		return false, nil
 	}
@@ -96,11 +96,11 @@ func (r *ActionGateRule) Apply(act Action, roles []Role) (bypassAuthz bool, err 
 	switch r.Effect {
 	case DenyActionGateEffect:
 		if matchRuleRoles {
-			return false, ActionDeniedByAGP
+			return false, ErrActionDeniedByAGP
 		}
 	case RequireActionGateEffect:
 		if !matchRuleRoles {
-			return false, ActionDeniedByAGP
+			return false, ErrActionDeniedByAGP
 		}
 	case AllowActionGateEffect:
 		if matchRuleRoles {
@@ -134,7 +134,7 @@ func (agp ActionGatePolicy) GetRule(ctx *AuthorizationContext) (*ActionGateRule,
 
 // Adds new rule in police, will return error if rule
 // is either invalid, either already exist in policy
-func (agp ActionGatePolicy) AddRule(rule *ActionGateRule) *Error {
+func (agp ActionGatePolicy) AddRule(rule *ActionGateRule) error {
 	if err := rule.Validate(); err != nil {
 		return err
 	}
@@ -142,7 +142,7 @@ func (agp ActionGatePolicy) AddRule(rule *ActionGateRule) *Error {
 	key := agp.keyFrom(&rule.Entity, rule.Action, &rule.Resource)
 
 	if _, ok := agp.rules[key]; ok {
-		return NewError("Rule " + key + " already exist in Action Gate Policy")
+		return errors.New("rule " + key + " already exists in action gate policy")
 	}
 
 	agp.rules[key] = rule

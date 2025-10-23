@@ -1,19 +1,9 @@
 package rbac
 
-type Error struct {
-	message string
-}
-
-func (e *Error) Error() string {
-	return e.message
-}
-
-func NewError(message string) *Error {
-	return &Error{message}
-}
+import "errors"
 
 var (
-	InsufficientPermissions     = NewError("Insufficient permissions to perform this action")
-	EntityDoesNotHaveSuchAction = NewError("Entity doesn't have such action")
-	ActionDeniedByAGP           = NewError("Action has been denied by Action Gate Policy")
+	ErrInsufficientPermissions     = errors.New("insufficient permissions to perform this action")
+	ErrEntityDoesNotHaveSuchAction = errors.New("entity doesn't have such action")
+	ErrActionDeniedByAGP           = errors.New("action has been denied by action gate policy")
 )

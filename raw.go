@@ -2,7 +2,6 @@ package rbac
 
 import (
 	"fmt"
-	"slices"
 )
 
 // TODO add partial loading (to be able for example to init all actions in code, but load AGP from config)
@@ -110,24 +109,17 @@ func normalizeRoles(rawRoles []*rawRole) []Role {
 }
 
 func normalizeDefaultRoles(roles []Role, defaultRolesNames []string) ([]Role, error) {
-	defaultRoles := make([]Role, 0, len(defaultRolesNames))
-
+	roleMap := make(map[string]Role)
 	for _, role := range roles {
-		if slices.Contains(defaultRolesNames, role.Name) {
-			defaultRoles = append(defaultRoles, role)
-		}
+		roleMap[role.Name] = role
 	}
 
-	// TODO deduplicate that? (check validateDefaultRoles())
-	if len(defaultRoles) != len(defaultRolesNames) {
-	outer:
-		for _, roleName := range defaultRolesNames {
-			for _, role := range defaultRoles {
-				if roleName == role.Name {
-					continue outer
-				}
+	defaultRoles := make([]Role, 0, len(defaultRolesNames))
 
-			}
+	for _, roleName := range defaultRolesNames {
+		if role, exists := roleMap[roleName]; exists {
+			defaultRoles = append(defaultRoles, role)
+		} else {
 			return nil, fmt.Errorf(
 				"Invalid role '%s'. This role doesn't exist in Schema roles",
 				roleName,

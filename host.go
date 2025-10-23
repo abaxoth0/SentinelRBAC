@@ -1,5 +1,7 @@
 package rbac
 
+import "errors"
+
 // Host originaly desined for applications with microservice architectures.
 //
 // Host helps to define roles and schemas for each service in your app.
@@ -10,13 +12,13 @@ type Host struct {
 	Schemas      []Schema
 }
 
-func (h *Host) GetSchema(ID string) (*Schema, *Error) {
+func (h *Host) GetSchema(ID string) (*Schema, error) {
 	if h == nil {
-		return nil, NewError("RBAC schema is not defined")
+		return nil, errors.New("RBAC schema is not defined")
 	}
 
 	if ID == "" {
-		return nil, NewError("Missing schema id")
+		return nil, errors.New("missing schema id")
 	}
 
 	for _, schema := range h.Schemas {
@@ -25,7 +27,7 @@ func (h *Host) GetSchema(ID string) (*Schema, *Error) {
 		}
 	}
 
-	return nil, NewError("Schema with id \"" + ID + "\" wasn't found")
+	return nil, errors.New("schema with id \"" + ID + "\" wasn't found")
 }
 
 // Merges permissions from schema specific roles with global roles.
