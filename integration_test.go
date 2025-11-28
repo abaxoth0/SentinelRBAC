@@ -59,7 +59,7 @@ func TestAuthorizationWithActionGatePolicy(t *testing.T) {
 
 	// Test deny effect
 	err := Authorize(&ctx, []Role{adminRole}, &agp)
-	if err != ActionDeniedByAGP {
+	if err != ErrActionDeniedByAGP {
 		t.Errorf("Expected ActionDeniedByAGP, got %v", err)
 	}
 

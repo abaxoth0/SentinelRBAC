@@ -27,9 +27,8 @@ func load[T any, R loadable[T]](path string, postLoad func(*R)) (T, error) {
 		return zero, err
 	}
 	defer func() {
-		if err = file.Close(); err != nil {
-			Debug.Log(err.Error())
-			os.Exit(1)
+		if closeErr := file.Close(); closeErr != nil {
+			Debug.Log(closeErr.Error())
 		}
 	}()
 

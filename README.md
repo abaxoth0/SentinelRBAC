@@ -8,7 +8,7 @@ First of all, you need to determine `who` is trying to do `what` and `with whom`
 
 ### Who? - Entity
 
-Entity is a subject wich will be authorized to perform actions on a specific resources.
+Entity is a subject which will be authorized to perform actions on specific resources.
 
 In most cases you will have only 1 entity in your application - user.
 
@@ -16,15 +16,15 @@ In most cases you will have only 1 entity in your application - user.
 
 Action just represents name of this action (under the hood is just a type definition based on string). Each action is bound to specific entity.
 
-Action can be create via `.NewAction(<name>, <required permissions>)` method of some entity.
+Action can be created via `.NewAction(<name>, <required permissions>)` method of some entity.
 
 ### With whom? - Resource
 
-Resource is a thing on wich action is supposed to be performed.
+Resource is a thing on which action is supposed to be performed.
 
 ### Context
 
-Pretty simple, isn't it? All this 3 things combined together represents an `Authorization Context`, since they are used to just show what actually happens during authorization. But this still won't be enough, cuz we also need to know what this specific entity is allowed to do, in other words - it's `Permissions`.
+Pretty simple, isn't it? All these 3 things combined together represent an `Authorization Context`, since they are used to show what actually happens during authorization. But this still won't be enough, because we also need to know what this specific entity is allowed to do, in other words - it's `Permissions`.
 
 ### PERMISSIONS
 
@@ -46,13 +46,13 @@ Permissions are represented via bitmask, so they are very fast to work with. The
 
 -   Self Delete
 
-I assume that there are no need to describe what each one of them should permit to do.
+I assume that there is no need to describe what each one of them should permit to do.
 
-But how to store all this permissions? Of course we could just left it as a bitmask (which is just a number), but it will be really hard to maintain. So we need more convenient way to represent all this permissions and for that we will use `Roles`.
+But how to store all these permissions? Of course we could just leave it as a bitmask (which is just a number), but it will be really hard to maintain. So we need a more convenient way to represent all these permissions and for that we will use `Roles`.
 
 ### ROLES
 
-Each role consist of 2 parts: the name and permissions for this role. You can think of them as a named set of permissions.
+Each role consists of 2 parts: the name and permissions for this role. You can think of them as a named set of permissions.
 
 ### Authorization
 

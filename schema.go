@@ -1,5 +1,7 @@
 package rbac
 
+import "errors"
+
 type Schema struct {
 	ID               string
 	Roles            []Role
@@ -18,14 +20,14 @@ func NewSchema(id string, roles []Role, defaultRoles []Role, agp ActionGatePolic
 	}
 }
 
-func (schema *Schema) ParseRole(roleName string) (Role, *Error) {
+func (schema *Schema) ParseRole(roleName string) (Role, error) {
 	for _, role := range schema.Roles {
 		if role.Name == roleName {
 			return role, nil
 		}
 	}
 
-	return Role{}, NewError("\"" + schema.ID + "\" schema doesn't have \"" + roleName + "\" role")
+	return Role{}, errors.New("schema \"" + schema.ID + "\" doesn't have role \"" + roleName + "\"")
 }
 
 // Reads and parses RBAC schema from file at the specified path.

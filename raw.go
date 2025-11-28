@@ -2,19 +2,18 @@ package rbac
 
 import (
 	"fmt"
-	"slices"
 )
 
-// TODO add partional loading (to be able for example to init all actions in code, but load AGP from config)
+// TODO add partial loading (to be able for example to init all actions in code, but load AGP from config)
 
-// "raw" structs are design to be used by host and schema to be able being initialized from files.
+// "raw" structs are designed to be used by host and schema to be able to be initialized from files.
 // They are more user-friendly, but also more "heavy".
 //
 // So for example - rawPermissions is just a struct which consists of flags,
 // instead original Permissions is bitmask.
-// Of course rawPermissions more convenient and readable, but also more slow.
+// Of course rawPermissions are more convenient and readable, but also slower.
 // For example:
-// For authz using Permissions used bitwise operations which are extrimely fast,
+// For authz using Permissions used bitwise operations which are extremely fast,
 // but using rawPermissions the only way is to check all flag one-by-one in 'if' statements.
 
 type rawPermissions struct {
@@ -110,52 +109,11 @@ func normalizeRoles(rawRoles []*rawRole) []Role {
 }
 
 func normalizeDefaultRoles(roles []Role, defaultRolesNames []string) ([]Role, error) {
-	defaultRoles := make([]Role, 0, len(defaultRolesNames))
-
-	for _, role := range roles {
-		if slices.Contains(defaultRolesNames, role.Name) {
-			defaultRoles = append(defaultRoles, role)
-		}
-	}
-
-	// TODO deduplicate that? (check validateDefaultRoles())
-	if len(defaultRoles) != len(defaultRolesNames) {
-	outer:
-		for _, roleName := range defaultRolesNames {
-			for _, role := range defaultRoles {
-				if roleName == role.Name {
-					continue outer
-				}
-
-			}
-			return nil, fmt.Errorf(
-				"Invalid role '%s'. This role doesn't exist in Schema roles",
-				roleName,
-			)
-		}
-	}
-
-	return defaultRoles, nil
+	roleMap := buildRoleMap(roles)
+	return rolesByNames(roleMap, defaultRolesNames)
 }
 
 // Used to get slice of normalized elements using their raw representations.
-func getNormalFrom[T any](raw []string, normal []T, cmp func(a string, b T) bool) ([]T, error) {
-	result := make([]T, 0, len(raw))
-
-main_loop:
-	for _, rawItem := range raw {
-		for _, normalItem := range normal {
-			if cmp(rawItem, normalItem) {
-				result = append(result, normalItem)
-				continue main_loop
-			}
-		}
-		return nil, fmt.Errorf("\"%s\" doesn't exist", rawItem)
-	}
-
-	return result, nil
-}
-
 func normalizeActionGatePolicy(
 	schemaEntities []Entity,
 	schemaRoles []Role,
@@ -166,17 +124,28 @@ func normalizeActionGatePolicy(
 
 	agp := NewActionGatePolicy()
 
-	for _, rawRule := range rawAgp {
-		var ruleResource Resource
-		var zeroResource Resource
+	entityMap := make(map[string]Entity, len(schemaEntities))
+	entityActions := make(map[string]map[string]Action, len(schemaEntities))
+	for _, entity := range schemaEntities {
+		entityMap[entity.name] = entity
 
-		for _, resource := range schemaResources {
-			if resource.name == rawRule.On {
-				ruleResource = resource
-				break
-			}
+		actionMap := make(map[string]Action, len(entity.actions))
+		for action := range entity.actions {
+			actionMap[action.String()] = action
 		}
-		if ruleResource == zeroResource {
+		entityActions[entity.name] = actionMap
+	}
+
+	resourceMap := make(map[string]Resource, len(schemaResources))
+	for _, resource := range schemaResources {
+		resourceMap[resource.name] = resource
+	}
+
+	roleMap := buildRoleMap(schemaRoles)
+
+	for _, rawRule := range rawAgp {
+		ruleResource, ok := resourceMap[rawRule.On]
+		if !ok {
 			return zero, fmt.Errorf("Resource %s doesn't exist in the schema resources", rawRule.On)
 		}
 
@@ -184,38 +153,33 @@ func normalizeActionGatePolicy(
 			return zero, fmt.Errorf("Rule missing entity(-s) for the %s resource", ruleResource.name)
 		}
 
-		ruleEntities, err := getNormalFrom(rawRule.For, schemaEntities, func(a string, b Entity) bool {
-			return a == b.name
-		})
-		if err != nil {
-			return zero, fmt.Errorf("Failed to get normalized entity - %s", err.Error())
+		if rawRule.Doing == nil || len(rawRule.Doing) == 0 {
+			return zero, fmt.Errorf("Rule missing action(-s) for the %s resource", ruleResource.name)
 		}
 
-		ruleRoles, err := getNormalFrom(rawRule.Having, schemaRoles, func(a string, b Role) bool {
-			return a == b.Name
-		})
-		if err != nil {
-			return zero, fmt.Errorf("Failed to get normalized roles - %s", err.Error())
-		}
-
-		for _, ruleEntity := range ruleEntities {
-			if rawRule.Doing == nil || len(rawRule.Doing) == 0 {
-				return zero, fmt.Errorf(
-					"Rule missing action(-s) for the %s entity on the %s resource",
-					ruleEntity.name, ruleResource.name,
-				)
-			}
-
-			actions := make([]Action, 0, len(ruleEntity.actions))
-			for action := range ruleEntity.actions {
-				actions = append(actions, action)
-			}
-
-			ruleActions, err := getNormalFrom(rawRule.Doing, actions, func(a string, b Action) bool {
-				return a == b.String()
-			})
+		var ruleRoles []Role
+		if len(rawRule.Having) > 0 {
+			roles, err := rolesByNames(roleMap, rawRule.Having)
 			if err != nil {
-				return zero, fmt.Errorf("Failed to get normalized action for the %s entity - %s", ruleEntity.name, err.Error())
+				return zero, fmt.Errorf("Failed to get normalized roles - %s", err.Error())
+			}
+			ruleRoles = roles
+		}
+
+		for _, entityName := range rawRule.For {
+			ruleEntity, ok := entityMap[entityName]
+			if !ok {
+				return zero, fmt.Errorf("Failed to get normalized entity - \"%s\" doesn't exist", entityName)
+			}
+
+			actionMap := entityActions[entityName]
+			ruleActions := make([]Action, 0, len(rawRule.Doing))
+			for _, actionName := range rawRule.Doing {
+				action, ok := actionMap[actionName]
+				if !ok {
+					return zero, fmt.Errorf("Failed to get normalized action for the %s entity - \"%s\" doesn't exist", ruleEntity.name, actionName)
+				}
+				ruleActions = append(ruleActions, action)
 			}
 
 			for _, ruleAction := range ruleActions {
@@ -253,15 +217,15 @@ func normalizeEntities(rawEntities []*rawEntity) []Entity {
 }
 
 func normalizeResources(rawResources []string) []Resource {
-	resorces := make([]Resource, len(rawResources))
+	resources := make([]Resource, 0, len(rawResources))
 
 	for _, rawResource := range rawResources {
-		resorces = append(resorces, Resource{
+		resources = append(resources, Resource{
 			name: rawResource,
 		})
 	}
 
-	return resorces
+	return resources
 }
 
 // Creates new Schema based on self.

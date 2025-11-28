@@ -80,10 +80,10 @@ func example() {
 	}
 
 	e := rbac.Authorize(&ctx, roles1, &agp)
-	// Error: Action has been denied by Action Gate Policy
+	// <nil>
 	fmt.Println(e)
 
 	e = rbac.Authorize(&ctx, roles2, &agp)
-	// Error: Insufficient permissions to perform this action
+	// Error: Action has been denied by Action Gate Policy
 	fmt.Println(e)
 }

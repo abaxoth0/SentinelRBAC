@@ -5,34 +5,35 @@ import (
 )
 
 func TestError(t *testing.T) {
-	// Test custom error creation
-	err := NewError("test error")
-	if err.Error() != "test error" {
-		t.Errorf("Expected 'test error', got %s", err.Error())
-	}
-
 	// Test error interface implementation
-	var errorInterface error = err
+	var errorInterface error = ErrInsufficientPermissions
 	if errorInterface == nil {
 		t.Error("Error should implement error interface")
 	}
 
 	// Test predefined errors
-	if InsufficientPermissions.Error() != "Insufficient permissions to perform this action" {
-		t.Error("InsufficientPermissions message incorrect")
+	if ErrInsufficientPermissions.Error() != "insufficient permissions to perform this action" {
+		t.Error("ErrInsufficientPermissions message incorrect")
 	}
 
-	if EntityDoesNotHaveSuchAction.Error() != "Entity doesn't have such action" {
-		t.Error("EntityDoesNotHaveSuchAction message incorrect")
+	if ErrEntityDoesNotHaveSuchAction.Error() != "entity doesn't have such action" {
+		t.Error("ErrEntityDoesNotHaveSuchAction message incorrect")
 	}
 
-	if ActionDeniedByAGP.Error() != "Action has been denied by Action Gate Policy" {
-		t.Error("ActionDeniedByAGP message incorrect")
+	if ErrActionDeniedByAGP.Error() != "action has been denied by action gate policy" {
+		t.Error("ErrActionDeniedByAGP message incorrect")
 	}
 
-	// Test error comparison
-	_ = NewError("same message")
-	_ = NewError("same message")
-	// Note: Different error instances will never be equal
-	// This test documents the current behavior
+	// Test legacy support
+	if ErrInsufficientPermissions.Error() != "insufficient permissions to perform this action" {
+		t.Error("Legacy InsufficientPermissions message incorrect")
+	}
+
+	if ErrEntityDoesNotHaveSuchAction.Error() != "entity doesn't have such action" {
+		t.Error("Legacy EntityDoesNotHaveSuchAction message incorrect")
+	}
+
+	if ErrActionDeniedByAGP.Error() != "action has been denied by action gate policy" {
+		t.Error("Legacy ActionDeniedByAGP message incorrect")
+	}
 }

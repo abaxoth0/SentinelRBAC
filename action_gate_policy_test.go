@@ -30,7 +30,7 @@ func TestActionGatePolicy(t *testing.T) {
 
 	// Test rule application
 	bypass, err := rule.Apply(readAction, []Role{adminRole})
-	if err != ActionDeniedByAGP {
+	if err != ErrActionDeniedByAGP {
 		t.Errorf("Expected ActionDeniedByAGP, got %v", err)
 	}
 	if bypass {

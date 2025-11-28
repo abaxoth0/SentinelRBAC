@@ -3,44 +3,53 @@ package rbac
 import (
 	"errors"
 	"fmt"
-	"slices"
 )
 
 func validateDefaultRoles(roles []Role, defaultRoles []Role) error {
-outer:
+	roleMap := buildRoleMap(roles)
+
 	for _, defaultRole := range defaultRoles {
-		for _, role := range roles {
-			if defaultRole.Name == role.Name {
-				continue outer
-			}
-
+		if _, exists := roleMap[defaultRole.Name]; !exists {
+			return fmt.Errorf(
+				"Invalid role '%s'. This role doesn't exist in Schema roles",
+				defaultRole.Name,
+			)
 		}
-
-		return fmt.Errorf(
-			"Invalid role '%s'. This role doesn't exist in Schema roles",
-			defaultRole.Name,
-		)
 	}
 
 	return nil
 }
 
 func validateAGP(schema *Schema) error {
+	// Create lookup maps for O(1) validation
+	entityMap := make(map[string]bool)
+	for _, entity := range schema.Entities {
+		entityMap[entity.name] = true
+	}
+
+	resourceMap := make(map[string]bool)
+	for _, resource := range schema.Resources {
+		resourceMap[resource.name] = true
+	}
+
+	roleMap := make(map[string]bool)
+	for _, role := range schema.Roles {
+		roleMap[role.Name] = true
+	}
+
 	for ruleName, rule := range schema.ActionGatePolicy.rules {
 		if err := rule.Effect.Validate(); err != nil {
 			return fmt.Errorf("Invalid Action Gate Policy rule %s in the %s schema - %s", ruleName, schema.ID, err.Error())
 		}
 
-		if !slices.ContainsFunc(schema.Entities, func(v Entity) bool {
-			return v.name == rule.Entity.name
-		}) {
+		if !entityMap[rule.Entity.name] {
 			return fmt.Errorf(
 				"Invalid Action Gate Policy rule %s - Entity %s doesn't exist in the %s schema",
 				ruleName, rule.Entity.name, schema.ID,
 			)
 		}
 
-		if !slices.Contains(schema.Resources, rule.Resource) {
+		if !resourceMap[rule.Resource.name] {
 			return fmt.Errorf(
 				"Invalid Action Gate Policy rule %s - resource %s doesn't exist in the %s schema",
 				ruleName, rule.Resource.name, schema.ID,
@@ -48,7 +57,7 @@ func validateAGP(schema *Schema) error {
 		}
 
 		for _, ruleRole := range rule.Roles {
-			if !slices.Contains(schema.Roles, ruleRole) {
+			if !roleMap[ruleRole.Name] {
 				return fmt.Errorf(
 					"Invalid Action Gate Policy rule %s - Role %s doesn't exist in the %s schema",
 					ruleName, ruleRole.Name, schema.ID,
@@ -56,12 +65,7 @@ func validateAGP(schema *Schema) error {
 			}
 		}
 
-		actions := []Action{}
-		for action := range rule.Entity.actions {
-			actions = append(actions, action)
-		}
-
-		if !slices.Contains(actions, rule.Action) {
+		if !rule.Entity.HasAction(rule.Action) {
 			return fmt.Errorf(
 				"Invalid Action Gate Policy rule %s - Action %s doesn't exist in the %s schema",
 				ruleName, rule.Action, schema.ID,
@@ -99,19 +103,8 @@ func ValidateHost(host *Host) error {
 			return err
 		}
 
-	outer:
-		for _, defaultRole := range schema.DefaultRoles {
-			for _, role := range schema.Roles {
-				if role.Name == defaultRole.Name {
-					continue outer
-				}
-			}
-
-			return fmt.Errorf(
-				"Invalid default role '%s' in '%s' schema: there are no such role in this schema",
-				defaultRole.Name,
-				schema.ID,
-			)
+		if err := validateDefaultRoles(schema.Roles, schema.DefaultRoles); err != nil {
+			return err
 		}
 	}
 

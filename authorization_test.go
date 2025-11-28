@@ -1,6 +1,7 @@
 package rbac
 
 import (
+	"errors"
 	"testing"
 )
 
@@ -32,17 +33,25 @@ func TestAuthorizeCRUDFunc(t *testing.T) {
 
 func TestSetAuthzFunc(t *testing.T) {
 	// Test custom function
-	customFunc := func(required, permitted Permissions) *Error {
+	customFunc := func(required, permitted Permissions) error {
 		if required == 0 {
-			return NewError("custom error")
+			return errors.New("custom error")
 		}
 		return nil
 	}
 
 	SetAuthzFunc(customFunc)
-	err := authorize(0, ReadPermission)
+
+	user := NewEntity("user")
+	action, _ := user.NewAction("test", 0)
+	resource := NewResource("res")
+	ctx := NewAuthorizationContext(&user, action, resource)
+
+	err := Authorize(&ctx, nil, nil)
 	if err == nil {
 		t.Error("Expected custom error, got nil")
+	} else if err.Error() != "custom error" {
+		t.Errorf("Expected 'custom error', got %s", err.Error())
 	}
 
 	// Reset and test panic
@@ -107,13 +116,13 @@ func TestAuthorizeWithActionGatePolicy(t *testing.T) {
 
 	// Test deny effect
 	err := Authorize(&ctx, []Role{adminRole}, &agp)
-	if err != ActionDeniedByAGP {
+	if err != ErrActionDeniedByAGP {
 		t.Errorf("Expected ActionDeniedByAGP, got %v", err)
 	}
 
 	// Test no rule applies
 	err = Authorize(&ctx, []Role{userRole}, &agp)
-	if err != InsufficientPermissions {
+	if err != ErrInsufficientPermissions {
 		t.Errorf("Expected InsufficientPermissions, got %v", err)
 	}
 }
