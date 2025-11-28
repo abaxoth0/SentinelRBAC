@@ -1,22 +1,38 @@
 package rbac
 
+// AuthzFunc checks user's permissions.
 type AuthzFunc func(Permissions, Permissions) error
 
-var authorize AuthzFunc = AuthorizeCRUDFunc
+// RuleProvider can lookup ActionGate rules for provided context.
+type RuleProvider interface {
+	GetRule(ctx *AuthorizationContext) (*ActionGateRule, bool)
+}
 
-// AuthorizationFunc checks user's permissions.
-//
-// This function is encapsulated in rbac package, so it can't be called directly,
-// instead use "Authorize" function.
-//
-// AuthorizationFunc can be overridden via this function, to implement custom authorization logic.
-// By default it uses the AuthorizeCRUDFunc function.
+// Authorizer encapsulates authorization behavior.
+type Authorizer struct {
+	authzFunc AuthzFunc
+}
+
+// NewAuthorizer creates authorizer with default authorization function.
+func NewAuthorizer() *Authorizer {
+	return &Authorizer{
+		authzFunc: AuthorizeCRUDFunc,
+	}
+}
+
+var defaultAuthorizer = NewAuthorizer()
+
+// SetAuthzFunc overrides default authorization function globally.
 func SetAuthzFunc(fn AuthzFunc) {
+	defaultAuthorizer.SetAuthzFunc(fn)
+}
+
+// SetAuthzFunc overrides authorization function for this authorizer.
+func (a *Authorizer) SetAuthzFunc(fn AuthzFunc) {
 	if fn == nil {
 		panic("authorization function can't be nil")
 	}
-
-	authorize = fn
+	a.authzFunc = fn
 }
 
 // Checks if the "permitted" permissions are sufficient to satisfy the "required" CRUD permissions.
@@ -38,13 +54,18 @@ func AuthorizeCRUDFunc(required Permissions, permitted Permissions) error {
 // Checks if the user has sufficient permissions to perform an action on this resource.
 //
 // Returns an error if any of the required permissions for the action are not covered by given roles.
-func Authorize(ctx *AuthorizationContext, roles []Role, AGP *ActionGatePolicy) error {
+func Authorize(ctx *AuthorizationContext, roles []Role, provider RuleProvider) error {
+	return defaultAuthorizer.Authorize(ctx, roles, provider)
+}
+
+// Authorize checks authorization using provided rule provider.
+func (a *Authorizer) Authorize(ctx *AuthorizationContext, roles []Role, provider RuleProvider) error {
 	if !ctx.Entity.HasAction(ctx.Action) {
 		return ErrEntityDoesNotHaveSuchAction
 	}
 
-	if AGP != nil {
-		if rule, ok := AGP.GetRule(ctx); ok {
+	if provider != nil {
+		if rule, ok := provider.GetRule(ctx); ok {
 			bypass, err := rule.Apply(ctx.Action, roles)
 			if err != nil {
 				return err
@@ -62,9 +83,9 @@ func Authorize(ctx *AuthorizationContext, roles []Role, AGP *ActionGatePolicy) e
 		mergredPermissions |= role.Permissions
 	}
 
-	if err := authorize(requiredPermissions, mergredPermissions); err == nil {
-		return nil
+	if err := a.authzFunc(requiredPermissions, mergredPermissions); err != nil {
+		return err
 	}
 
-	return ErrInsufficientPermissions
+	return nil
 }

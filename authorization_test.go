@@ -41,9 +41,17 @@ func TestSetAuthzFunc(t *testing.T) {
 	}
 
 	SetAuthzFunc(customFunc)
-	err := authorize(0, ReadPermission)
+
+	user := NewEntity("user")
+	action, _ := user.NewAction("test", 0)
+	resource := NewResource("res")
+	ctx := NewAuthorizationContext(&user, action, resource)
+
+	err := Authorize(&ctx, nil, nil)
 	if err == nil {
 		t.Error("Expected custom error, got nil")
+	} else if err.Error() != "custom error" {
+		t.Errorf("Expected 'custom error', got %s", err.Error())
 	}
 
 	// Reset and test panic
