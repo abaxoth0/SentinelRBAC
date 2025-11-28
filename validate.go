@@ -6,13 +6,10 @@ import (
 )
 
 func validateDefaultRoles(roles []Role, defaultRoles []Role) error {
-	roleMap := make(map[string]bool)
-	for _, role := range roles {
-		roleMap[role.Name] = true
-	}
+	roleMap := buildRoleMap(roles)
 
 	for _, defaultRole := range defaultRoles {
-		if !roleMap[defaultRole.Name] {
+		if _, exists := roleMap[defaultRole.Name]; !exists {
 			return fmt.Errorf(
 				"Invalid role '%s'. This role doesn't exist in Schema roles",
 				defaultRole.Name,
@@ -106,20 +103,8 @@ func ValidateHost(host *Host) error {
 			return err
 		}
 
-		// Create a map for O(1) lookups
-		roleMap := make(map[string]bool)
-		for _, role := range schema.Roles {
-			roleMap[role.Name] = true
-		}
-
-		for _, defaultRole := range schema.DefaultRoles {
-			if !roleMap[defaultRole.Name] {
-				return fmt.Errorf(
-					"Invalid default role '%s' in '%s' schema: there are no such role in this schema",
-					defaultRole.Name,
-					schema.ID,
-				)
-			}
+		if err := validateDefaultRoles(schema.Roles, schema.DefaultRoles); err != nil {
+			return err
 		}
 	}
 

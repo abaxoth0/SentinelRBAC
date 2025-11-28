@@ -109,25 +109,8 @@ func normalizeRoles(rawRoles []*rawRole) []Role {
 }
 
 func normalizeDefaultRoles(roles []Role, defaultRolesNames []string) ([]Role, error) {
-	roleMap := make(map[string]Role)
-	for _, role := range roles {
-		roleMap[role.Name] = role
-	}
-
-	defaultRoles := make([]Role, 0, len(defaultRolesNames))
-
-	for _, roleName := range defaultRolesNames {
-		if role, exists := roleMap[roleName]; exists {
-			defaultRoles = append(defaultRoles, role)
-		} else {
-			return nil, fmt.Errorf(
-				"Invalid role '%s'. This role doesn't exist in Schema roles",
-				roleName,
-			)
-		}
-	}
-
-	return defaultRoles, nil
+	roleMap := buildRoleMap(roles)
+	return rolesByNames(roleMap, defaultRolesNames)
 }
 
 // Used to get slice of normalized elements using their raw representations.
