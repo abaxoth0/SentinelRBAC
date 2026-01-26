@@ -7,8 +7,8 @@ import "errors"
 // Host helps to define roles and schemas for each service in your app.
 // You can also select several roles as default roles, all new users must have this roles.
 type Host struct {
-	DefaultRoles []Role
-	GlobalRoles  []Role
+	DefaultRoles []*Role
+	GlobalRoles  []*Role
 	Schemas      []Schema
 }
 

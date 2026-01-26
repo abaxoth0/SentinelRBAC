@@ -154,10 +154,16 @@ func (sb *SchemaBuilder) AddAGPRule(rule *ActionGateRule) error {
 	if rule == nil {
 		return errors.New("cannot add nil AGP rule")
 	}
-	// Check for duplicates by key
-	key := fmt.Sprintf("%s:%s:%s", rule.Entity.Name(), rule.Action.String(), rule.Resource.Name())
+	// Check for duplicates by key (entity+resource+effect+roles)
+	key := fmt.Sprintf("%s:%s:%s:", rule.Entity.Name(), rule.Resource.Name(), string(rule.Effect))
+	for _, role := range rule.Roles {
+		key += role.Name + ","
+	}
 	for i, r := range sb.agpRules {
-		existingKey := fmt.Sprintf("%s:%s:%s", r.Entity.Name(), r.Action.String(), r.Resource.Name())
+		existingKey := fmt.Sprintf("%s:%s:%s:", r.Entity.Name(), r.Resource.Name(), string(r.Effect))
+		for _, role := range r.Roles {
+			existingKey += role.Name + ","
+		}
 		if existingKey == key {
 			sb.agpRules[i] = rule
 			return nil
@@ -343,12 +349,17 @@ func (sb *SchemaBuilder) Build() (Schema, error) {
 	}
 
 	for _, rule := range sb.agpRules {
+		// Convert all actions to strings
+		actionNames := make([]string, len(rule.Actions))
+		for i, action := range rule.Actions {
+			actionNames[i] = action.String()
+		}
 		rawRule := &rawActionGateRules{
 			For:    []string{rule.Entity.Name()},
-			Doing:  []string{rule.Action.String()},
+			Doing:  actionNames,
 			On:     rule.Resource.Name(),
 			Apply:  string(rule.Effect),
-			Having: GetRolesNames(rule.Roles),
+			Having: GetRolesNamesFromValues(rule.Roles),
 		}
 		mergedRaw.ActionGatePolicy = append(mergedRaw.ActionGatePolicy, rawRule)
 	}

@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-func validateDefaultRoles(roles []Role, defaultRoles []Role) error {
+func validateDefaultRoles(roles []*Role, defaultRoles []*Role) error {
 	roleMap := buildRoleMap(roles)
 
 	for _, defaultRole := range defaultRoles {
@@ -37,39 +37,45 @@ func validateAGP(schema *Schema) error {
 		roleMap[role.Name] = true
 	}
 
-	for ruleName, rule := range schema.ActionGatePolicy.rules {
-		if err := rule.Effect.Validate(); err != nil {
-			return fmt.Errorf("Invalid Action Gate Policy rule %s in the %s schema - %s", ruleName, schema.ID, err.Error())
-		}
+	// Validate all rules in the policy by iterating through the index
+	for _, rules := range schema.ActionGatePolicy.index {
+		for _, rule := range rules {
+			if err := rule.Effect.Validate(); err != nil {
+				return fmt.Errorf("Invalid Action Gate Policy rule in the %s schema - %s", schema.ID, err.Error())
+			}
 
-		if !entityMap[rule.Entity.name] {
-			return fmt.Errorf(
-				"Invalid Action Gate Policy rule %s - Entity %s doesn't exist in the %s schema",
-				ruleName, rule.Entity.name, schema.ID,
-			)
-		}
-
-		if !resourceMap[rule.Resource.name] {
-			return fmt.Errorf(
-				"Invalid Action Gate Policy rule %s - resource %s doesn't exist in the %s schema",
-				ruleName, rule.Resource.name, schema.ID,
-			)
-		}
-
-		for _, ruleRole := range rule.Roles {
-			if !roleMap[ruleRole.Name] {
+			if !entityMap[rule.Entity.name] {
 				return fmt.Errorf(
-					"Invalid Action Gate Policy rule %s - Role %s doesn't exist in the %s schema",
-					ruleName, ruleRole.Name, schema.ID,
+					"Invalid Action Gate Policy rule - Entity %s doesn't exist in the %s schema",
+					rule.Entity.name, schema.ID,
 				)
 			}
-		}
 
-		if !rule.Entity.HasAction(rule.Action) {
-			return fmt.Errorf(
-				"Invalid Action Gate Policy rule %s - Action %s doesn't exist in the %s schema",
-				ruleName, rule.Action, schema.ID,
-			)
+			if !resourceMap[rule.Resource.name] {
+				return fmt.Errorf(
+					"Invalid Action Gate Policy rule - resource %s doesn't exist in the %s schema",
+					rule.Resource.name, schema.ID,
+				)
+			}
+
+			for _, ruleRole := range rule.Roles {
+				if !roleMap[ruleRole.Name] {
+					return fmt.Errorf(
+						"Invalid Action Gate Policy rule - Role %s doesn't exist in the %s schema",
+						ruleRole.Name, schema.ID,
+					)
+				}
+			}
+
+			// Validate that all actions in the rule exist for the entity
+			for _, action := range rule.Actions {
+				if !rule.Entity.HasAction(action) {
+					return fmt.Errorf(
+						"Invalid Action Gate Policy rule - Action %s doesn't exist in the %s schema",
+						action, schema.ID,
+					)
+				}
+			}
 		}
 	}
 

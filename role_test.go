@@ -17,10 +17,9 @@ func TestRole(t *testing.T) {
 	}
 
 	// Test GetRolesNames
-	roles := []Role{
-		NewRole("admin", CreatePermission),
-		NewRole("user", ReadPermission),
-	}
+	role1 := NewRole("admin", CreatePermission)
+	role2 := NewRole("user", ReadPermission)
+	roles := []*Role{&role1, &role2}
 
 	names := GetRolesNames(roles)
 	expected := []string{"admin", "user"}

@@ -15,9 +15,9 @@ type agpFile struct {
 // define their domain model in code to keep policy definitions in configuration files.
 func LoadActionGatePolicyFromFile(
 	path string,
-	entities []Entity,
-	roles []Role,
-	resources []Resource,
+	entities []*Entity,
+	roles []*Role,
+	resources []*Resource,
 ) (ActionGatePolicy, error) {
 	var zero ActionGatePolicy
 

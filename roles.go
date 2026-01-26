@@ -3,8 +3,8 @@ package rbac
 import "fmt"
 
 // creates a map for quick lookups by role name.
-func buildRoleMap(roles []Role) map[string]Role {
-	roleMap := make(map[string]Role, len(roles))
+func buildRoleMap(roles []*Role) map[string]*Role {
+	roleMap := make(map[string]*Role, len(roles))
 	for _, role := range roles {
 		roleMap[role.Name] = role
 	}
@@ -13,8 +13,8 @@ func buildRoleMap(roles []Role) map[string]Role {
 
 // returns a slice of roles matching the provided names.
 // Returns an error if any of the names do not exist in the role map.
-func rolesByNames(roleMap map[string]Role, names []string) ([]Role, error) {
-	result := make([]Role, 0, len(names))
+func rolesByNames(roleMap map[string]*Role, names []string) ([]*Role, error) {
+	result := make([]*Role, 0, len(names))
 
 	for _, name := range names {
 		role, ok := roleMap[name]
@@ -26,4 +26,16 @@ func rolesByNames(roleMap map[string]Role, names []string) ([]Role, error) {
 	}
 
 	return result, nil
+}
+
+// convertRolePointersToValues converts a slice of role pointers to a slice of role values.
+func convertRolePointersToValues(roles []*Role) []Role {
+	if roles == nil {
+		return nil
+	}
+	result := make([]Role, len(roles))
+	for i, role := range roles {
+		result[i] = *role
+	}
+	return result
 }

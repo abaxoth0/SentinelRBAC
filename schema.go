@@ -4,14 +4,14 @@ import "errors"
 
 type Schema struct {
 	ID               string
-	Roles            []Role
-	DefaultRoles     []Role
-	Entities         []Entity
-	Resources        []Resource
+	Roles            []*Role
+	DefaultRoles     []*Role
+	Entities         []*Entity
+	Resources        []*Resource
 	ActionGatePolicy ActionGatePolicy
 }
 
-func NewSchema(id string, roles []Role, defaultRoles []Role, agp ActionGatePolicy) Schema {
+func NewSchema(id string, roles []*Role, defaultRoles []*Role, agp ActionGatePolicy) Schema {
 	return Schema{
 		ID:               id,
 		Roles:            roles,
@@ -20,14 +20,14 @@ func NewSchema(id string, roles []Role, defaultRoles []Role, agp ActionGatePolic
 	}
 }
 
-func (schema *Schema) ParseRole(roleName string) (Role, error) {
+func (schema *Schema) ParseRole(roleName string) (*Role, error) {
 	for _, role := range schema.Roles {
 		if role.Name == roleName {
 			return role, nil
 		}
 	}
 
-	return Role{}, errors.New("schema \"" + schema.ID + "\" doesn't have role \"" + roleName + "\"")
+	return nil, errors.New("schema \"" + schema.ID + "\" doesn't have role \"" + roleName + "\"")
 }
 
 // Reads and parses RBAC schema from file at the specified path.

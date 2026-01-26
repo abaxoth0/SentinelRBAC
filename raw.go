@@ -4,7 +4,6 @@ import (
 	"fmt"
 )
 
-
 // "raw" structs are designed to be used by host and schema to be able to be initialized from files.
 // They are more user-friendly, but also more "heavy".
 //
@@ -94,36 +93,37 @@ type rawSchema struct {
 	ActionGatePolicy  []*rawActionGateRules `json:"action-gate-policy,omitempty"`
 }
 
-func normalizeRoles(rawRoles []*rawRole) []Role {
-	roles := make([]Role, len(rawRoles))
+func normalizeRoles(rawRoles []*rawRole) []*Role {
+	roles := make([]*Role, len(rawRoles))
 
 	for i, rawRole := range rawRoles {
-		roles[i] = NewRole(
+		role := NewRole(
 			rawRole.Name,
 			rawRole.Permissions.ToBitmask(),
 		)
+		roles[i] = &role
 	}
 
 	return roles
 }
 
-func normalizeDefaultRoles(roles []Role, defaultRolesNames []string) ([]Role, error) {
+func normalizeDefaultRoles(roles []*Role, defaultRolesNames []string) ([]*Role, error) {
 	roleMap := buildRoleMap(roles)
 	return rolesByNames(roleMap, defaultRolesNames)
 }
 
 // Used to get slice of normalized elements using their raw representations.
 func normalizeActionGatePolicy(
-	schemaEntities []Entity,
-	schemaRoles []Role,
-	schemaResources []Resource,
+	schemaEntities []*Entity,
+	schemaRoles []*Role,
+	schemaResources []*Resource,
 	rawAgp []*rawActionGateRules,
 ) (ActionGatePolicy, error) {
 	var zero ActionGatePolicy
 
 	agp := NewActionGatePolicy()
 
-	entityMap := make(map[string]Entity, len(schemaEntities))
+	entityMap := make(map[string]*Entity, len(schemaEntities))
 	entityActions := make(map[string]map[string]Action, len(schemaEntities))
 	for _, entity := range schemaEntities {
 		entityMap[entity.name] = entity
@@ -135,7 +135,7 @@ func normalizeActionGatePolicy(
 		entityActions[entity.name] = actionMap
 	}
 
-	resourceMap := make(map[string]Resource, len(schemaResources))
+	resourceMap := make(map[string]*Resource, len(schemaResources))
 	for _, resource := range schemaResources {
 		resourceMap[resource.name] = resource
 	}
@@ -156,7 +156,7 @@ func normalizeActionGatePolicy(
 			return zero, fmt.Errorf("Rule missing action(-s) for the %s resource", ruleResource.name)
 		}
 
-		var ruleRoles []Role
+		var ruleRoles []*Role
 		if len(rawRule.Having) > 0 {
 			roles, err := rolesByNames(roleMap, rawRule.Having)
 			if err != nil {
@@ -165,6 +165,8 @@ func normalizeActionGatePolicy(
 			ruleRoles = roles
 		}
 
+		// Group rules by entity+resource+effect+roles to avoid explosion
+		// Create one rule per entity that applies to all specified actions
 		for _, entityName := range rawRule.For {
 			ruleEntity, ok := entityMap[entityName]
 			if !ok {
@@ -181,17 +183,16 @@ func normalizeActionGatePolicy(
 				ruleActions = append(ruleActions, action)
 			}
 
-			for _, ruleAction := range ruleActions {
-				err := agp.AddRule(&ActionGateRule{
-					Entity:   ruleEntity,
-					Effect:   ActionGateEffect(rawRule.Apply),
-					Roles:    ruleRoles,
-					Action:   ruleAction,
-					Resource: ruleResource,
-				})
-				if err != nil {
-					return zero, err
-				}
+			// Create a single rule for all actions instead of one per action
+			err := agp.AddRule(&ActionGateRule{
+				Entity:   *ruleEntity,
+				Effect:   ActionGateEffect(rawRule.Apply),
+				Roles:    convertRolePointersToValues(ruleRoles),
+				Actions:  ruleActions,
+				Resource: *ruleResource,
+			})
+			if err != nil {
+				return zero, err
 			}
 		}
 	}
@@ -199,8 +200,8 @@ func normalizeActionGatePolicy(
 	return agp, nil
 }
 
-func normalizeEntities(rawEntities []*rawEntity) []Entity {
-	entities := make([]Entity, 0, len(rawEntities))
+func normalizeEntities(rawEntities []*rawEntity) []*Entity {
+	entities := make([]*Entity, 0, len(rawEntities))
 
 	for _, rawEntity := range rawEntities {
 		entity := NewEntity(rawEntity.Name)
@@ -209,19 +210,18 @@ func normalizeEntities(rawEntities []*rawEntity) []Entity {
 			entity.NewAction(rawAct.Name, rawAct.RequiredPermissions.ToBitmask())
 		}
 
-		entities = append(entities, entity)
+		entities = append(entities, &entity)
 	}
 
 	return entities
 }
 
-func normalizeResources(rawResources []string) []Resource {
-	resources := make([]Resource, 0, len(rawResources))
+func normalizeResources(rawResources []string) []*Resource {
+	resources := make([]*Resource, 0, len(rawResources))
 
 	for _, rawResource := range rawResources {
-		resources = append(resources, Resource{
-			name: rawResource,
-		})
+		resource := NewResource(rawResource)
+		resources = append(resources, resource)
 	}
 
 	return resources

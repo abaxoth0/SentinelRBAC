@@ -12,7 +12,18 @@ func NewRole(name string, permissions Permissions) Role {
 	}
 }
 
-func GetRolesNames(roles []Role) []string {
+func GetRolesNames(roles []*Role) []string {
+	names := make([]string, len(roles))
+
+	for i, role := range roles {
+		names[i] = role.Name
+	}
+
+	return names
+}
+
+// GetRolesNamesFromValues converts a slice of Role values to their names.
+func GetRolesNamesFromValues(roles []Role) []string {
 	names := make([]string, len(roles))
 
 	for i, role := range roles {

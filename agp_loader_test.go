@@ -31,7 +31,7 @@ func TestLoadActionGatePolicyFromFile(t *testing.T) {
 		t.Fatalf("failed to write temp file: %v", err)
 	}
 
-	policy, err := LoadActionGatePolicyFromFile(path, []Entity{user}, []Role{adminRole}, []Resource{*cache})
+	policy, err := LoadActionGatePolicyFromFile(path, []*Entity{&user}, []*Role{&adminRole}, []*Resource{cache})
 	if err != nil {
 		t.Fatalf("expected policy to load: %v", err)
 	}
