@@ -1,5 +1,7 @@
 package rbac
 
+import "sync/atomic"
+
 // AuthzFunc checks user's permissions.
 type AuthzFunc func(Permissions, Permissions) error
 
@@ -20,11 +22,24 @@ func NewAuthorizer() *Authorizer {
 	}
 }
 
-var defaultAuthorizer = NewAuthorizer()
+var (
+	// defaultAuthzFunc stores the global authorization function atomically.
+	// This allows lock-free reads, providing excellent scalability under high concurrency.
+	defaultAuthzFunc atomic.Value
+)
+
+func init() {
+	// Initialize with the default function
+	defaultAuthzFunc.Store(AuthzFunc(AuthorizeCRUDFunc))
+}
 
 // SetAuthzFunc overrides default authorization function globally.
+// This function is thread-safe and can be called concurrently.
 func SetAuthzFunc(fn AuthzFunc) {
-	defaultAuthorizer.SetAuthzFunc(fn)
+	if fn == nil {
+		panic("authorization function can't be nil")
+	}
+	defaultAuthzFunc.Store(fn)
 }
 
 // SetAuthzFunc overrides authorization function for this authorizer.
@@ -54,8 +69,12 @@ func AuthorizeCRUDFunc(required Permissions, permitted Permissions) error {
 // Checks if the user has sufficient permissions to perform an action on this resource.
 //
 // Returns an error if any of the required permissions for the action are not covered by given roles.
+// This function is thread-safe and can be called concurrently.
 func Authorize(ctx *AuthorizationContext, roles []Role, provider RuleProvider) error {
-	return defaultAuthorizer.Authorize(ctx, roles, provider)
+	authzFunc := defaultAuthzFunc.Load().(AuthzFunc)
+
+	tempAuthz := &Authorizer{authzFunc: authzFunc}
+	return tempAuthz.Authorize(ctx, roles, provider)
 }
 
 // Authorize checks authorization using provided rule provider.
