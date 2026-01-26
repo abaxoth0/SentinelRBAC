@@ -37,33 +37,44 @@ var agEffectMap = map[ActionGateEffect]bool{
 
 // Required fields are: Entity, Effect, Actions and Resource.
 // Actions can contain one or more actions that this rule applies to.
+// Entity, Resource, and Roles are stored as pointers to avoid expensive copying.
 type ActionGateRule struct {
-	Entity   Entity
+	Entity   *Entity
 	Effect   ActionGateEffect
-	Roles    []Role
+	Roles    []*Role
 	Actions  []Action // Multiple actions this rule applies to
-	Resource Resource
+	Resource *Resource
 }
 
 // NewActionGateRule creates a new ActionGateRule for a single action.
 func NewActionGateRule(ctx *AuthorizationContext, effect ActionGateEffect, roles []Role) *ActionGateRule {
+	// Convert roles slice to pointers
+	rolePtrs := make([]*Role, len(roles))
+	for i := range roles {
+		rolePtrs[i] = &roles[i]
+	}
 	return &ActionGateRule{
-		Entity:   *ctx.Entity,
+		Entity:   ctx.Entity,
 		Effect:   effect,
-		Roles:    roles,
+		Roles:    rolePtrs,
 		Actions:  []Action{ctx.Action},
-		Resource: *ctx.Resource,
+		Resource: ctx.Resource,
 	}
 }
 
 // NewActionGateRuleForActions creates a new ActionGateRule for multiple actions.
 func NewActionGateRuleForActions(entity *Entity, actions []Action, resource *Resource, effect ActionGateEffect, roles []Role) *ActionGateRule {
+	// Convert roles slice to pointers
+	rolePtrs := make([]*Role, len(roles))
+	for i := range roles {
+		rolePtrs[i] = &roles[i]
+	}
 	return &ActionGateRule{
-		Entity:   *entity,
+		Entity:   entity,
 		Effect:   effect,
-		Roles:    roles,
+		Roles:    rolePtrs,
 		Actions:  actions,
-		Resource: *resource,
+		Resource: resource,
 	}
 }
 
@@ -75,14 +86,13 @@ func (r *ActionGateRule) Validate() error {
 	if r.Roles == nil || len(r.Roles) == 0 {
 		return errors.New("invalid action gate rule: roles are missing")
 	}
-	if r.Entity.name == "" {
-		return errors.New("invalid action gate rule: entity name is missing")
+	if r.Entity == nil || r.Entity.name == "" {
+		return errors.New("invalid action gate rule: entity is missing")
 	}
 	if r.Actions == nil || len(r.Actions) == 0 {
 		return errors.New("invalid action gate rule: actions are missing")
 	}
-	var zeroResource Resource
-	if r.Resource == zeroResource {
+	if r.Resource == nil || r.Resource.name == "" {
 		return errors.New("invalid action gate rule: resource is missing")
 	}
 	return nil
@@ -190,14 +200,16 @@ func (agp ActionGatePolicy) AddRule(rule *ActionGateRule) error {
 	// For each action in the rule, add the rule to the index
 	// Multiple actions point to the same rule object (no duplication)
 	for _, action := range rule.Actions {
-		key := agp.keyFrom(&rule.Entity, action, &rule.Resource)
+		key := agp.keyFrom(rule.Entity, action, rule.Resource)
 
 		// Check if a rule already exists for this entity+action+resource
 		existingRules := agp.index[key]
 
 		// Check for duplicate rule (same entity, resource, effect, and roles)
 		for _, existing := range existingRules {
-			if existing.Entity.name == rule.Entity.name &&
+			if existing.Entity != nil && rule.Entity != nil &&
+				existing.Resource != nil && rule.Resource != nil &&
+				existing.Entity.name == rule.Entity.name &&
 				existing.Resource.name == rule.Resource.name &&
 				existing.Effect == rule.Effect &&
 				rolesEqual(existing.Roles, rule.Roles) {
@@ -212,8 +224,8 @@ func (agp ActionGatePolicy) AddRule(rule *ActionGateRule) error {
 	return nil
 }
 
-// rolesEqual checks if two role slices contain the same roles (order-independent).
-func rolesEqual(a, b []Role) bool {
+// rolesEqual checks if two role pointer slices contain the same roles (order-independent).
+func rolesEqual(a, b []*Role) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -221,12 +233,14 @@ func rolesEqual(a, b []Role) bool {
 	// Create a map for quick lookup
 	bMap := make(map[string]bool, len(b))
 	for _, role := range b {
-		bMap[role.Name] = true
+		if role != nil {
+			bMap[role.Name] = true
+		}
 	}
 
 	// Check if all roles in a exist in b
 	for _, role := range a {
-		if !bMap[role.Name] {
+		if role == nil || !bMap[role.Name] {
 			return false
 		}
 	}

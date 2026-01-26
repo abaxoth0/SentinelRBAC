@@ -44,6 +44,9 @@ func validateAGP(schema *Schema) error {
 				return fmt.Errorf("Invalid Action Gate Policy rule in the %s schema - %s", schema.ID, err.Error())
 			}
 
+			if rule.Entity == nil {
+				return fmt.Errorf("Invalid Action Gate Policy rule - Entity is nil in the %s schema", schema.ID)
+			}
 			if !entityMap[rule.Entity.name] {
 				return fmt.Errorf(
 					"Invalid Action Gate Policy rule - Entity %s doesn't exist in the %s schema",
@@ -51,6 +54,9 @@ func validateAGP(schema *Schema) error {
 				)
 			}
 
+			if rule.Resource == nil {
+				return fmt.Errorf("Invalid Action Gate Policy rule - Resource is nil in the %s schema", schema.ID)
+			}
 			if !resourceMap[rule.Resource.name] {
 				return fmt.Errorf(
 					"Invalid Action Gate Policy rule - resource %s doesn't exist in the %s schema",
@@ -59,6 +65,9 @@ func validateAGP(schema *Schema) error {
 			}
 
 			for _, ruleRole := range rule.Roles {
+				if ruleRole == nil {
+					return fmt.Errorf("Invalid Action Gate Policy rule - Role is nil in the %s schema", schema.ID)
+				}
 				if !roleMap[ruleRole.Name] {
 					return fmt.Errorf(
 						"Invalid Action Gate Policy rule - Role %s doesn't exist in the %s schema",

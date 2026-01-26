@@ -19,10 +19,10 @@ func TestSchemaBuilder_CodeOnly(t *testing.T) {
 	cache := NewResource("cache")
 
 	builder.
-		AddEntity(user).
-		AddRole(adminRole).
-		AddRole(userRole).
-		AddResource(*cache).
+		AddEntity(&user).
+		AddRole(&adminRole).
+		AddRole(&userRole).
+		AddResource(cache).
 		SetDefaultRoles([]string{"user"})
 
 	schema, err := builder.Build()
@@ -183,11 +183,11 @@ func TestSchemaBuilder_Merge(t *testing.T) {
 	codeResource := NewResource("code-resource")
 
 	builder.
-		AddRole(codeRole).
-		AddRole(newRole).
-		AddEntity(codeEntity).
-		AddEntity(newEntity).
-		AddResource(*codeResource).
+		AddRole(&codeRole).
+		AddRole(&newRole).
+		AddEntity(&codeEntity).
+		AddEntity(&newEntity).
+		AddResource(codeResource).
 		SetDefaultRoles([]string{"file-role"})
 
 	schema, err := builder.Build()
@@ -272,7 +272,7 @@ func TestSchemaBuilder_AddAGPRule(t *testing.T) {
 	cache := NewResource("cache")
 	adminRole := NewRole("admin", ReadPermission)
 
-	builder.AddEntity(user).AddRole(adminRole).AddResource(*cache)
+	builder.AddEntity(&user).AddRole(&adminRole).AddResource(cache)
 
 	ctx := NewAuthorizationContext(&user, readAction, cache)
 	rule := NewActionGateRule(&ctx, AllowActionGateEffect, []Role{adminRole})
@@ -304,11 +304,11 @@ func TestHostBuilder_CodeOnly(t *testing.T) {
 	schemaBuilder := NewSchemaBuilder("test-schema")
 	user := NewEntity("user")
 	user.NewAction("read", ReadPermission)
-	schemaBuilder.AddEntity(user).AddRole(userRole)
+	schemaBuilder.AddEntity(&user).AddRole(&userRole)
 
 	builder.
-		AddGlobalRole(adminRole).
-		AddGlobalRole(userRole).
+		AddGlobalRole(&adminRole).
+		AddGlobalRole(&userRole).
 		AddSchema(schemaBuilder).
 		SetDefaultRoles([]string{"user"})
 
@@ -329,4 +329,3 @@ func TestHostBuilder_CodeOnly(t *testing.T) {
 		t.Errorf("Expected 1 default role, got %d", len(host.DefaultRoles))
 	}
 }
-

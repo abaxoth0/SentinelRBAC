@@ -185,11 +185,11 @@ func normalizeActionGatePolicy(
 
 			// Create a single rule for all actions instead of one per action
 			err := agp.AddRule(&ActionGateRule{
-				Entity:   *ruleEntity,
+				Entity:   ruleEntity,
 				Effect:   ActionGateEffect(rawRule.Apply),
-				Roles:    convertRolePointersToValues(ruleRoles),
+				Roles:    ruleRoles,
 				Actions:  ruleActions,
-				Resource: *ruleResource,
+				Resource: ruleResource,
 			})
 			if err != nil {
 				return zero, err

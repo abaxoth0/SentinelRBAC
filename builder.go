@@ -78,9 +78,9 @@ func LoadRawHost(path string) (*rawHost, error) {
 type SchemaBuilder struct {
 	id           string
 	raw          *rawSchema
-	entities     []Entity
-	roles        []Role
-	resources    []Resource
+	entities     []*Entity
+	roles        []*Role
+	resources    []*Resource
 	agpRules     []*ActionGateRule
 	defaultRoles []string
 }
@@ -89,9 +89,9 @@ type SchemaBuilder struct {
 func NewSchemaBuilder(id string) *SchemaBuilder {
 	return &SchemaBuilder{
 		id:           id,
-		entities:     []Entity{},
-		roles:        []Role{},
-		resources:    []Resource{},
+		entities:     []*Entity{},
+		roles:        []*Role{},
+		resources:    []*Resource{},
 		agpRules:     []*ActionGateRule{},
 		defaultRoles: []string{},
 	}
@@ -113,7 +113,10 @@ func (sb *SchemaBuilder) LoadRaw(path string) error {
 
 // AddEntity adds or replaces an entity. If an entity with the same name already exists
 // (from file or previous AddEntity call), it will be replaced.
-func (sb *SchemaBuilder) AddEntity(entity Entity) *SchemaBuilder {
+func (sb *SchemaBuilder) AddEntity(entity *Entity) *SchemaBuilder {
+	if entity == nil {
+		return sb
+	}
 	for i, e := range sb.entities {
 		if e.Name() == entity.Name() {
 			sb.entities[i] = entity
@@ -126,7 +129,10 @@ func (sb *SchemaBuilder) AddEntity(entity Entity) *SchemaBuilder {
 
 // AddRole adds or replaces a role. If a role with the same name already exists,
 // it will be replaced.
-func (sb *SchemaBuilder) AddRole(role Role) *SchemaBuilder {
+func (sb *SchemaBuilder) AddRole(role *Role) *SchemaBuilder {
+	if role == nil {
+		return sb
+	}
 	for i, r := range sb.roles {
 		if r.Name == role.Name {
 			sb.roles[i] = role
@@ -138,7 +144,10 @@ func (sb *SchemaBuilder) AddRole(role Role) *SchemaBuilder {
 }
 
 // AddResource adds a resource. Duplicates by name are ignored.
-func (sb *SchemaBuilder) AddResource(resource Resource) *SchemaBuilder {
+func (sb *SchemaBuilder) AddResource(resource *Resource) *SchemaBuilder {
+	if resource == nil {
+		return sb
+	}
 	for _, r := range sb.resources {
 		if r.Name() == resource.Name() {
 			return sb
@@ -202,11 +211,12 @@ func (sb *SchemaBuilder) Build() (Schema, error) {
 	}
 
 	// Merge roles: code-defined override file-defined
-	roleMap := make(map[string]Role)
+	roleMap := make(map[string]*Role)
 	// add file-defined roles
 	if mergedRaw.Roles != nil {
 		for _, rawRole := range mergedRaw.Roles {
-			roleMap[rawRole.Name] = NewRole(rawRole.Name, rawRole.Permissions.ToBitmask())
+			role := NewRole(rawRole.Name, rawRole.Permissions.ToBitmask())
+			roleMap[rawRole.Name] = &role
 		}
 	}
 	// Toverride/add code-defined roles
@@ -251,7 +261,7 @@ func (sb *SchemaBuilder) Build() (Schema, error) {
 	mergedRaw.Roles = mergedRoles
 
 	// Merge entities: code-defined override file-defined
-	entityMap := make(map[string]Entity)
+	entityMap := make(map[string]*Entity)
 	// add file-defined entities
 	if mergedRaw.Entities != nil {
 		for _, rawEntity := range mergedRaw.Entities {
@@ -259,7 +269,7 @@ func (sb *SchemaBuilder) Build() (Schema, error) {
 			for _, rawAction := range rawEntity.Actions {
 				entity.NewAction(rawAction.Name, rawAction.RequiredPermissions.ToBitmask())
 			}
-			entityMap[rawEntity.Name] = entity
+			entityMap[rawEntity.Name] = &entity
 		}
 	}
 	// Toverride/add code-defined entities
@@ -327,11 +337,11 @@ func (sb *SchemaBuilder) Build() (Schema, error) {
 
 	// Merge AGP rules: union (code-defined rules are added to file-defined ones)
 	// Convert code-defined rules to raw format
-	entityNameMap := make(map[string]Entity)
+	entityNameMap := make(map[string]*Entity)
 	for _, e := range entityMap {
 		entityNameMap[e.Name()] = e
 	}
-	resourceNameMap := make(map[string]Resource)
+	resourceNameMap := make(map[string]*Resource)
 	for _, r := range sb.resources {
 		resourceNameMap[r.Name()] = r
 	}
@@ -339,11 +349,11 @@ func (sb *SchemaBuilder) Build() (Schema, error) {
 	if mergedRaw.Resources != nil {
 		for _, rName := range mergedRaw.Resources {
 			if _, exists := resourceNameMap[rName]; !exists {
-				resourceNameMap[rName] = *NewResource(rName)
+				resourceNameMap[rName] = NewResource(rName)
 			}
 		}
 	}
-	roleNameMap := make(map[string]Role)
+	roleNameMap := make(map[string]*Role)
 	for _, r := range roleMap {
 		roleNameMap[r.Name] = r
 	}
@@ -359,7 +369,7 @@ func (sb *SchemaBuilder) Build() (Schema, error) {
 			Doing:  actionNames,
 			On:     rule.Resource.Name(),
 			Apply:  string(rule.Effect),
-			Having: GetRolesNamesFromValues(rule.Roles),
+			Having: GetRolesNames(rule.Roles),
 		}
 		mergedRaw.ActionGatePolicy = append(mergedRaw.ActionGatePolicy, rawRule)
 	}
@@ -375,7 +385,7 @@ func (sb *SchemaBuilder) Build() (Schema, error) {
 // and/or adding components programmatically, then merging and normalizing everything.
 type HostBuilder struct {
 	raw          *rawHost
-	globalRoles  []Role
+	globalRoles  []*Role
 	schemas      []*SchemaBuilder
 	defaultRoles []string
 }
@@ -383,7 +393,7 @@ type HostBuilder struct {
 // NewHostBuilder creates a new HostBuilder.
 func NewHostBuilder() *HostBuilder {
 	return &HostBuilder{
-		globalRoles:  []Role{},
+		globalRoles:  []*Role{},
 		schemas:      []*SchemaBuilder{},
 		defaultRoles: []string{},
 	}
@@ -401,7 +411,10 @@ func (hb *HostBuilder) LoadRaw(path string) error {
 
 // AddGlobalRole adds or replaces a global role. If a role with the same name
 // already exists, it will be replaced.
-func (hb *HostBuilder) AddGlobalRole(role Role) *HostBuilder {
+func (hb *HostBuilder) AddGlobalRole(role *Role) *HostBuilder {
+	if role == nil {
+		return hb
+	}
 	for i, r := range hb.globalRoles {
 		if r.Name == role.Name {
 			hb.globalRoles[i] = role
@@ -443,11 +456,12 @@ func (hb *HostBuilder) Build() (Host, error) {
 	}
 
 	// Merge global roles: code-defined override file-defined
-	roleMap := make(map[string]Role)
+	roleMap := make(map[string]*Role)
 	// add file-defined roles
 	if mergedRaw.GlobalRoles != nil {
 		for _, rawRole := range mergedRaw.GlobalRoles {
-			roleMap[rawRole.Name] = NewRole(rawRole.Name, rawRole.Permissions.ToBitmask())
+			role := NewRole(rawRole.Name, rawRole.Permissions.ToBitmask())
+			roleMap[rawRole.Name] = &role
 		}
 	}
 	// override/add code-defined roles
