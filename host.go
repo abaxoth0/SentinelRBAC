@@ -21,9 +21,9 @@ func (h *Host) GetSchema(ID string) (*Schema, error) {
 		return nil, errors.New("missing schema id")
 	}
 
-	for _, schema := range h.Schemas {
-		if schema.ID == ID {
-			return &schema, nil
+	for i := range h.Schemas {
+		if h.Schemas[i].ID == ID {
+			return &h.Schemas[i], nil
 		}
 	}
 
