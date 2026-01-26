@@ -4,7 +4,6 @@ import (
 	"fmt"
 )
 
-// TODO add partial loading (to be able for example to init all actions in code, but load AGP from config)
 
 // "raw" structs are designed to be used by host and schema to be able to be initialized from files.
 // They are more user-friendly, but also more "heavy".
